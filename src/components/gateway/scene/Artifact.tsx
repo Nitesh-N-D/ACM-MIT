@@ -10,104 +10,123 @@ import { COLORS, sub, useScene } from "./state";
 export const ARTIFACT_POS = new THREE.Vector3(0, 4.85, -0.5);
 
 /**
- * The Nexus Artifact: a crystal conduit inside three precessing quantum
- * rings. Emissive materials + additive glow sprites, no post-processing.
+ * The Nexus Artifact: a faceted crystal conduit inside three quantum rings.
+ * Each ring is a machined metal band carrying a luminous channel, turning on
+ * its own axis. Emissive materials + additive glow sprites, no
+ * post-processing.
  */
+const RINGS = [
+  { r: 1.42, tilt: [Math.PI / 2.3, 0, 0], color: COLORS.ice, metal: "#c3cfee", speed: 1 },
+  { r: 1.14, tilt: [Math.PI / 2, 0.9, 0], color: COLORS.cyan, metal: "#8fa3d8", speed: -1.35 },
+  { r: 0.9, tilt: [Math.PI / 2, -0.9, 0.4], color: COLORS.violet, metal: "#d8b25e", speed: 1.7 },
+] as const;
+
 export function Artifact() {
   const { ch } = useScene();
   const root = useRef<THREE.Group>(null);
-  const crystal = useRef<THREE.Mesh>(null);
-  const crystalMat = useRef<THREE.MeshStandardMaterial>(null);
-  const rings = useRef<(THREE.Mesh | null)[]>([]);
-  const ringMats = useRef<(THREE.MeshBasicMaterial | null)[]>([]);
+  const crystal = useRef<THREE.Group>(null);
+  const rings = useRef<(THREE.Group | null)[]>([]);
   const light = useRef<THREE.PointLight>(null);
   const spin = useRef(0);
 
-  const geo = useMemo(
+  const geo = useMemo(() => {
+    const profile = [
+      [0, -1.12], [0.3, -0.62], [0.42, -0.08], [0.4, 0.3], [0.24, 0.78], [0, 1.12],
+    ].map(([r, y]) => new THREE.Vector2(r, y));
+    return {
+      crystal: new THREE.LatheGeometry(profile, 6),
+      shard: new THREE.OctahedronGeometry(0.2, 0),
+      core: new THREE.OctahedronGeometry(0.2, 0),
+      // radialSegments 4 → a machined, diamond-section band.
+      band: RINGS.map((r) => new THREE.TorusGeometry(r.r, 0.036, 4, 96)),
+      channel: RINGS.map((r) => new THREE.TorusGeometry(r.r - 0.04, 0.014, 5, 96)),
+      node: new THREE.BoxGeometry(0.12, 0.12, 0.1),
+    };
+  }, []);
+
+  const mats = useMemo(
     () => ({
-      crystal: new THREE.OctahedronGeometry(0.62, 0),
-      inner: new THREE.OctahedronGeometry(0.3, 0),
-      ring: [1.45, 1.15, 0.92].map((r, i) => new THREE.TorusGeometry(r, i === 0 ? 0.035 : 0.028, 6, 96)),
+      crystal: new THREE.MeshPhysicalMaterial({
+        color: "#8fefff",
+        emissive: COLORS.cyan,
+        emissiveIntensity: 0.12,
+        metalness: 0.1,
+        roughness: 0.06,
+        clearcoat: 1,
+        clearcoatRoughness: 0.05,
+        flatShading: true,
+        transparent: true,
+        opacity: 0.9,
+      }),
+      shard: new THREE.MeshStandardMaterial({ color: "#bff6ff", emissive: COLORS.cyan, emissiveIntensity: 0.1, metalness: 0.2, roughness: 0.1, flatShading: true }),
+      core: new THREE.MeshBasicMaterial({ color: "#ffffff", transparent: true, opacity: 0.2, toneMapped: false }),
+      band: RINGS.map((r) => new THREE.MeshStandardMaterial({ color: r.metal, emissive: r.color, emissiveIntensity: 0.08, metalness: 0.9, roughness: 0.3, flatShading: true })),
+      channel: RINGS.map((r) => new THREE.MeshBasicMaterial({ color: r.color, transparent: true, opacity: 0, toneMapped: false })),
     }),
     [],
   );
 
-  const ringColors = [COLORS.ice, COLORS.cyan, COLORS.violet];
-  const ringTilt: [number, number, number][] = [
-    [Math.PI / 2.3, 0, 0],
-    [Math.PI / 2, 0.9, 0],
-    [Math.PI / 2, -0.9, 0.4],
-  ];
-
   useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime;
     const c = ch.crystal;
-    const lift = ch.lift;
+    const flash = Math.sin(Math.PI * ch.pulse);
 
     if (root.current) {
       root.current.position.set(
         ARTIFACT_POS.x,
-        ARTIFACT_POS.y + lift * 1.15 + Math.sin(t * 1.3) * 0.08 * c,
-        ARTIFACT_POS.z + lift * 0.35,
+        ARTIFACT_POS.y + ch.lift * 1.15 + Math.sin(t * 1.3) * 0.08 * c,
+        ARTIFACT_POS.z + ch.lift * 0.35,
       );
     }
     if (crystal.current) {
-      crystal.current.rotation.y = t * 0.6;
-      crystal.current.scale.setScalar(0.85 + 0.15 * c + Math.sin(Math.PI * ch.pulse) * 0.25);
+      crystal.current.rotation.y = t * 0.55;
+      crystal.current.scale.setScalar(0.7 + 0.1 * c + flash * 0.2);
     }
-    if (crystalMat.current) crystalMat.current.emissiveIntensity = 0.15 + c * 2.6;
+    mats.crystal.emissiveIntensity = 0.12 + c * 1.1 + flash * 2;
+    mats.shard.emissiveIntensity = 0.1 + c * 1.6;
+    mats.core.opacity = 0.2 + 0.8 * c;
 
-    // Ring spin speeds up with the "rings" channel.
-    spin.current += dt * (0.15 + ch.rings * 1.4);
-    rings.current.forEach((m, i) => {
-      if (!m) return;
-      const dir = i % 2 ? -1 : 1;
-      m.rotation.z = spin.current * dir * (1 + i * 0.35);
-      m.rotation.x = ringTilt[i]![0] + Math.sin(spin.current * 0.4 + i) * 0.25 * ch.rings;
-    });
-    ringMats.current.forEach((m, i) => {
-      if (m) m.opacity = sub(ch.rings, i * 0.15, 0.6 + i * 0.15) * 0.95;
+    // Rings rest at their tilt while dormant, then spin up on their own axes.
+    spin.current += dt * (0.12 + ch.rings * 1.3);
+    rings.current.forEach((g, i) => {
+      if (!g) return;
+      const r = RINGS[i]!;
+      g.rotation.z = spin.current * r.speed;
+      g.rotation.x = Math.sin(spin.current * 0.4 + i * 2.1) * 0.3 * ch.rings;
+      g.rotation.y = Math.cos(spin.current * 0.33 + i) * 0.22 * ch.rings;
+      mats.band[i]!.emissiveIntensity = 0.08 + 0.5 * ch.rings;
+      mats.channel[i]!.opacity = sub(ch.rings, i * 0.15, 0.6 + i * 0.15) * (0.85 + 0.15 * Math.sin(t * 2.4 + i));
     });
 
-    if (light.current) light.current.intensity = c * 26 + Math.sin(Math.PI * ch.pulse) * 60;
+    if (light.current) light.current.intensity = c * 26 + flash * 60;
   });
 
   return (
     <group ref={root} position={ARTIFACT_POS}>
       <pointLight ref={light} color={COLORS.cyan} intensity={0} distance={16} decay={2} />
 
-      <mesh ref={crystal} geometry={geo.crystal} scale={[1, 1.75, 1]}>
-        <meshStandardMaterial
-          ref={crystalMat}
-          color="#7feaff"
-          emissive={COLORS.cyan}
-          emissiveIntensity={0.15}
-          metalness={0.2}
-          roughness={0.08}
-          flatShading
-          transparent
-          opacity={0.92}
-        />
-      </mesh>
-      <mesh geometry={geo.inner} scale={[1, 1.8, 1]}>
-        <meshBasicMaterial color="#ffffff" toneMapped={false} />
-      </mesh>
+      <group ref={crystal}>
+        <mesh geometry={geo.crystal} material={mats.crystal} />
+        <mesh geometry={geo.core} material={mats.core} scale={[1, 2.6, 1]} />
+        {/* Satellite shards growing from the main body. */}
+        <mesh geometry={geo.shard} material={mats.shard} position={[0.3, -0.42, 0.1]} rotation={[0.2, 0.4, -0.5]} scale={[1, 2.1, 1]} />
+        <mesh geometry={geo.shard} material={mats.shard} position={[-0.27, -0.5, -0.14]} rotation={[-0.2, 1.1, 0.55]} scale={[0.8, 1.7, 0.8]} />
+        <mesh geometry={geo.shard} material={mats.shard} position={[-0.05, -0.6, 0.3]} rotation={[0.5, 0, 0.1]} scale={[0.6, 1.3, 0.6]} />
+      </group>
 
-      {geo.ring.map((g, i) => (
-        <group key={i} rotation={ringTilt[i]}>
-          <mesh ref={(m) => void (rings.current[i] = m)} geometry={g}>
-            <meshBasicMaterial
-              ref={(m) => void (ringMats.current[i] = m)}
-              color={ringColors[i]}
-              transparent
-              opacity={0}
-              toneMapped={false}
-            />
-          </mesh>
+      {RINGS.map((r, i) => (
+        <group key={i} rotation={r.tilt as unknown as [number, number, number]}>
+          <group ref={(g) => void (rings.current[i] = g)}>
+            <mesh geometry={geo.band[i]} material={mats.band[i]} />
+            <mesh geometry={geo.channel[i]} material={mats.channel[i]} />
+            {[0, Math.PI].map((a) => (
+              <mesh key={a} geometry={geo.node} material={mats.band[i]} position={[Math.cos(a) * r.r, Math.sin(a) * r.r, 0]} rotation={[0, 0, a]} />
+            ))}
+          </group>
         </group>
       ))}
 
-      <Glow size={4.2} color={COLORS.cyan} intensity={(t) => ch.crystal * (0.75 + 0.2 * Math.sin(t * 2.2)) + Math.sin(Math.PI * ch.pulse) * 0.8} />
+      <Glow size={4.2} color={COLORS.cyan} intensity={(t) => ch.crystal * (0.5 + 0.15 * Math.sin(t * 2.2)) + Math.sin(Math.PI * ch.pulse) * 0.8} />
       <Glow size={9} color={COLORS.electric} intensity={() => ch.crystal * 0.35} />
     </group>
   );

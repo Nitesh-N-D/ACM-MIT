@@ -11,8 +11,9 @@ export const GATE_Z = -9.5;
 const DEPTH = 2.4;
 
 // Opening (inner pentagon) and outer silhouette, in gate-local units.
-const IN = { w: 4.3, shoulder: 8.6, apex: 12.6 };
-const OUT = { w: 8.4, shoulder: 11.2, apex: 17.4 };
+// The opening is wide enough to frame the NEXUS Bridge behind the Sentinel.
+const IN = { w: 6.2, shoulder: 9.2, apex: 14.2 };
+const OUT = { w: 9.8, shoulder: 12.2, apex: 18.8 };
 
 function pentagon(p: { w: number; shoulder: number; apex: number }, cls: typeof THREE.Shape | typeof THREE.Path) {
   const s = new cls();
@@ -91,14 +92,25 @@ export function Gate() {
   useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     const open = ch.doors;
-    const slide = open * (IN.w + 0.2);
-    if (left.current) left.current.position.x = -slide;
-    if (right.current) right.current.position.x = slide;
+    // Doors telescope into the jambs: the outer edge stays put while the
+    // leaf compresses toward it.
+    const leaf = 1 - 0.93 * open;
+    const offset = IN.w * (1 - leaf);
+    if (left.current) {
+      left.current.scale.x = leaf;
+      left.current.position.x = -offset;
+    }
+    if (right.current) {
+      right.current.scale.x = leaf;
+      right.current.position.x = offset;
+    }
+    // Once the bridge forms, the flood thins so the span is visible.
+    const clear = 1 - 0.92 * sub(ch.bridge, 0.12, 0.7);
 
     if (edgeMat.current) edgeMat.current.opacity = ch.gate * 0.4;
     if (doorEdgeMat.current) doorEdgeMat.current.opacity = sub(ch.seam, 0, 1) * 0.6 * (1 - open);
     if (seamMat.current) seamMat.current.opacity = ch.seam * (1 - sub(open, 0, 0.35)) * (0.85 + 0.15 * Math.sin(t * 9));
-    if (floodMat.current) floodMat.current.opacity = sub(ch.flood, 0, 1) * 0.95;
+    if (floodMat.current) floodMat.current.opacity = sub(ch.flood, 0, 1) * 0.95 * clear;
     if (spillMat.current) spillMat.current.opacity = ch.flood * 0.38;
     if (floodLight.current) floodLight.current.intensity = ch.flood * 320;
     pylonMats.current.forEach((m) => {
@@ -138,8 +150,8 @@ export function Gate() {
         <meshBasicMaterial ref={floodMat} color="#9feeff" transparent opacity={0} depthWrite={false} toneMapped={false} />
       </mesh>
       <pointLight ref={floodLight} position={[0, 6, 1.8]} color="#8fe9ff" intensity={0} distance={34} decay={2} />
-      <Glow position={[0, 6, -1]} size={26} color={COLORS.cyan} intensity={() => ch.flood * 0.55} />
-      <Glow position={[0, 6.5, -1]} size={9} color={COLORS.ice} intensity={() => sub(ch.flood, 0, 0.6) * 0.75} />
+      <Glow position={[0, 6, -1]} size={26} color={COLORS.cyan} intensity={() => ch.flood * (0.25 + 0.3 * (1 - sub(ch.bridge, 0.12, 0.7)))} />
+      <Glow position={[0, 6.5, -1]} size={9} color={COLORS.ice} intensity={() => sub(ch.flood, 0, 0.6) * 0.75 * (1 - 0.8 * sub(ch.bridge, 0.12, 0.7))} />
 
       {/* Light spilling across the ground toward the platform */}
       <mesh geometry={geo.spill} rotation={[-Math.PI / 2, 0, Math.PI]} position={[0, 0.03, 7.4]} renderOrder={1}>
@@ -148,7 +160,7 @@ export function Gate() {
 
       {/* Flanking pylons */}
       {[-1, 1].map((s, i) => (
-        <group key={s} position={[s * 14.5, 0, 1.5]}>
+        <group key={s} position={[s * 16, 0, 1.5]}>
           <mesh geometry={geo.pylon} position={[0, 11, 0]} material={mats.stone} />
           <mesh geometry={geo.pylonLine} position={[0, 10, 0.95]} rotation={[-0.06, 0, 0]}>
             <meshBasicMaterial ref={(m) => void (pylonMats.current[i] = m)} color={COLORS.cyan} transparent opacity={0} toneMapped={false} />

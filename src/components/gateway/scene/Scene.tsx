@@ -23,8 +23,8 @@ const v = (x: number, y: number, z: number) => new THREE.Vector3(x, y, z);
 
 const PATH_A = new THREE.CatmullRomCurve3([v(0, 34, 96), v(-6, 16, 52), v(-2, 7.5, 24), v(0, 5.6, 12.5)]);
 const LOOK_A = new THREE.CatmullRomCurve3([v(0, 22, 0), v(0, 10, -4), v(0, 6.5, -3), v(0, 5.6, -1.5)]);
-const PATH_B = new THREE.CatmullRomCurve3([v(0, 5.6, 12.5), v(7, 8, 17), v(3, 10.5, 23), v(0, 10.5, 27)]);
-const LOOK_B = new THREE.CatmullRomCurve3([v(0, 5.6, -1.5), v(0, 6.5, -6), v(0, 7, -12), v(0, 7.2, -16)]);
+const PATH_B = new THREE.CatmullRomCurve3([v(0, 5.6, 12.5), v(7, 8, 17), v(8.5, 10.5, 23), v(7, 11.5, 27.5)]);
+const LOOK_B = new THREE.CatmullRomCurve3([v(0, 5.6, -1.5), v(0, 6.5, -6), v(-0.5, 6.8, -12), v(-1, 6.6, -16)]);
 
 function CameraRig() {
   const { ch } = useScene();
@@ -96,11 +96,11 @@ const CUES: Cue[] = [
   { step: 9, at: 7.2, tweens: [["seam", 0.6]] },
   { step: 10, at: 7.8, tweens: [["doors", 1.7, "power2.inOut"]] },
   { step: 11, at: 8.4, tweens: [["flood", 1.1]] },
-  { step: 12, at: 9.2, tweens: [["bridge", 1.9, "power1.in"]] },
+  { step: 12, at: 9.0, tweens: [["bridge", 2.9, "power1.inOut"]] },
   { step: 13, at: 9.6, tweens: [["camB", 3.4, "power2.inOut"], ["frame", 3.4, "power2.inOut"]] },
-  { step: 14, at: 10.4, tweens: [["city", 2.4]] },
+  { step: 14, at: 10.6, tweens: [["city", 2.4]] },
 ];
-const COMPLETE_AT = 12.2;
+const COMPLETE_AT = 12.6;
 
 function Director() {
   const { ch } = useScene();

@@ -9,7 +9,7 @@ export default defineConfig([
     // React Three Fiber scene graph: three.js objects (materials, uniforms,
     // camera) are imperative and are mutated inside useFrame by design —
     // that is the zero-re-render animation path R3F recommends.
-    files: ["src/components/gateway/scene/**/*.tsx"],
+    files: ["src/components/gateway/scene/**/*.tsx", "src/components/world/**/*.tsx", "src/components/explore/scene/**/*.tsx"],
     rules: { "react-hooks/immutability": "off" },
   },
   globalIgnores([".next/**", "out/**", "build/**", "node_modules/**", "next-env.d.ts"]),

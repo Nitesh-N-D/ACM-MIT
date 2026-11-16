@@ -68,6 +68,48 @@ export function windowsTexture() {
   return windows;
 }
 
+let iris: THREE.CanvasTexture | null = null;
+
+/** Eye iris: radial fibres, dark limbal ring and pupil. */
+export function irisTexture() {
+  if (iris) return iris;
+  const s = 128;
+  const h = s / 2;
+  const [c, g] = canvas(s, s);
+  const grd = g.createRadialGradient(h, h, 0, h, h, h);
+  grd.addColorStop(0, "#e9fdff");
+  grd.addColorStop(0.3, "#7df0ff");
+  grd.addColorStop(0.62, "#22b6e8");
+  grd.addColorStop(0.86, "#1456b8");
+  grd.addColorStop(1, "#05102e");
+  g.fillStyle = grd;
+  g.fillRect(0, 0, s, s);
+  const r = rng(7);
+  for (let i = 0; i < 90; i++) {
+    const a = r() * Math.PI * 2;
+    const r0 = h * (0.3 + r() * 0.1);
+    const r1 = h * (0.7 + r() * 0.26);
+    g.strokeStyle = r() > 0.5 ? "rgba(255,255,255,0.35)" : "rgba(4,20,60,0.4)";
+    g.lineWidth = 0.6 + r() * 1.2;
+    g.beginPath();
+    g.moveTo(h + Math.cos(a) * r0, h + Math.sin(a) * r0);
+    g.lineTo(h + Math.cos(a) * r1, h + Math.sin(a) * r1);
+    g.stroke();
+  }
+  g.fillStyle = "#01030a";
+  g.beginPath();
+  g.arc(h, h, h * 0.3, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = "rgba(2,8,26,0.9)";
+  g.lineWidth = 5;
+  g.beginPath();
+  g.arc(h, h, h - 3, 0, Math.PI * 2);
+  g.stroke();
+  iris = new THREE.CanvasTexture(c);
+  iris.colorSpace = THREE.SRGBColorSpace;
+  return iris;
+}
+
 /** Deterministic PRNG so the scene is identical on every visit. */
 export function rng(seed: number) {
   let s = seed;
