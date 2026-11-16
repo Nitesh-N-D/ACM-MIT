@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/brand/Logo";
+import { MailIcon, SocialIcon } from "@/components/brand/SocialIcon";
 import { Container } from "@/components/ui/Container";
 import { footerNav, site } from "@/config/site";
 
@@ -18,6 +19,30 @@ export function SiteFooter() {
           <Logo />
           <p className="mt-6 text-sm leading-relaxed text-muted">{site.description}</p>
           <p className="eyebrow mt-6">{site.tagline}</p>
+          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Official channels">
+            {site.socials.map((s) => (
+              <li key={s.href}>
+                <a
+                  href={s.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label={`${s.label} (opens in a new tab)`}
+                  className="flex size-10 items-center justify-center border border-line-strong text-silver transition-colors hover:border-cyan/60 hover:text-cyan"
+                >
+                  <SocialIcon label={s.label} className="size-[18px]" />
+                </a>
+              </li>
+            ))}
+            <li>
+              <a
+                href={`mailto:${site.chapter.email}`}
+                aria-label={`Email ${site.chapter.email}`}
+                className="flex size-10 items-center justify-center border border-line-strong text-silver transition-colors hover:border-cyan/60 hover:text-cyan"
+              >
+                <MailIcon className="size-[18px]" />
+              </a>
+            </li>
+          </ul>
         </div>
 
         {footerNav.map((group) => (

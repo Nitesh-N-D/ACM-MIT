@@ -20,13 +20,25 @@ export const site = {
     institution: "Madras Institute of Technology",
     university: "Anna University",
     institutionUrl: "https://mitindia.edu/",
-    // TODO(chapter): official chapter email and social links.
-    email: null as string | null,
+    // Supplied by the chapter.
+    email: "acmmitstudentchapter@gmail.com",
   },
+  /** Official channels (supplied by the chapter). */
+  socials: [
+    { label: "LinkedIn", href: "https://www.linkedin.com/company/acm-mit/", handle: "acm-mit" },
+    { label: "Instagram", href: "https://www.instagram.com/acm_mit/", handle: "@acm_mit" },
+  ],
+  /**
+   * Transparent variants derived from the supplied JPEG. `src` is the light
+   * version for the dark UI; `colorSrc` keeps the original blues for light
+   * backgrounds; `original` is the untouched file.
+   */
   logo: {
-    src: "/brand/acm-mit-logo.jpeg",
-    width: 1254,
-    height: 1254,
+    src: "/brand/acm-mit-logo-light.png",
+    colorSrc: "/brand/acm-mit-logo.png",
+    original: "/brand/acm-mit-logo.jpeg",
+    width: 640,
+    height: 595,
     alt: "ACM MIT Campus Student Chapter logo",
   },
 } as const;

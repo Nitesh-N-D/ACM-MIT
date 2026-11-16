@@ -9,12 +9,7 @@ type LogoProps = {
   markOnly?: boolean;
 };
 
-/**
- * Chapter logo + NEXUS wordmark.
- *
- * The supplied logo is a JPEG on white, so it sits in a light tile to stay
- * faithful to the original. Swap for a transparent SVG/PNG when available.
- */
+/** Chapter logo (transparent, light variant) + NEXUS wordmark. */
 export function Logo({ className, markOnly = false }: LogoProps) {
   return (
     <Link
@@ -22,19 +17,17 @@ export function Logo({ className, markOnly = false }: LogoProps) {
       className={cn("group flex items-center gap-3", className)}
       aria-label={`${site.chapter.fullName} — NEXUS home`}
     >
-      <span className="relative block size-10 shrink-0 overflow-hidden bg-white ring-1 ring-line-strong transition-shadow duration-300 group-hover:shadow-[0_0_20px_-4px_rgb(63_228_255/0.8)] [clip-path:polygon(0_0,calc(100%-7px)_0,100%_7px,100%_100%,7px_100%,0_calc(100%-7px))]">
-        <Image
-          src={site.logo.src}
-          alt=""
-          width={site.logo.width}
-          height={site.logo.height}
-          sizes="40px"
-          priority
-          className="size-full scale-[1.3] object-contain"
-        />
-      </span>
+      <Image
+        src={site.logo.src}
+        alt=""
+        width={site.logo.width}
+        height={site.logo.height}
+        sizes="48px"
+        priority
+        className="h-10 w-auto shrink-0 transition-[filter] duration-300 group-hover:drop-shadow-[0_0_10px_rgb(63_228_255/0.7)]"
+      />
       {!markOnly && (
-        <span className="flex flex-col leading-none">
+        <span className="flex flex-col border-l border-line-strong pl-3 leading-none">
           <span className="font-display text-[0.95rem] font-semibold tracking-[0.32em] text-ice">NEXUS</span>
           <span className="mt-1 font-mono text-[0.6rem] tracking-[0.28em] text-muted">{site.chapter.shortName}</span>
         </span>

@@ -31,7 +31,6 @@ export const metadata: Metadata = {
   },
   description: site.description,
   applicationName: site.name,
-  icons: { icon: site.logo.src },
   openGraph: {
     type: "website",
     siteName: site.name,
