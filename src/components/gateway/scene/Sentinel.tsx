@@ -1,21 +1,21 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useMemo, useRef } from "react";
+import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { Glow } from "./Glow";
+import { SentinelModel } from "./SentinelModel";
 import { irisTexture } from "./textures";
 import { COLORS, clamp01, sub, useScene } from "./state";
 
 /**
  * The Nexus Sentinel.
  *
- * PLACEHOLDER CHARACTER — this guardian is assembled procedurally from
- * smooth primitives (no downloaded model). It has an articulated body,
- * breathing, a head that wakes and tracks the artifact, eyes with iris,
- * pupil, cornea highlight and eyelids, and two-bone IK arms that raise the
- * artifact. It is NOT a photoreal sculpted character: see docs/ASSETS.md for
- * the slot where a licensed, rigged GLB replaces this component.
+ * `Sentinel` renders the rigged character model (SentinelModel) on the HIGH
+ * and BALANCED tiers. `ProceduralSentinel` below is the FALLBACK figure,
+ * assembled from primitives: it is shown on the LOW tier, while the model
+ * file loads, and if the model fails to load. It is not a sculpted character.
+ * See docs/ASSETS.md.
  */
 
 type V3 = [number, number, number];
@@ -45,7 +45,30 @@ function span(mesh: THREE.Object3D | null, a: THREE.Vector3, b: THREE.Vector3, t
   mesh.scale.set(1, len, 1);
 }
 
+class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode }, { failed: boolean }> {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? this.props.fallback : this.props.children;
+  }
+}
+
 export function Sentinel() {
+  const { tier } = useScene();
+  const fallback = <ProceduralSentinel />;
+  if (!tier.environment) return fallback;
+  return (
+    <ModelBoundary fallback={fallback}>
+      <Suspense fallback={fallback}>
+        <SentinelModel />
+      </Suspense>
+    </ModelBoundary>
+  );
+}
+
+export function ProceduralSentinel() {
   const { ch } = useScene();
 
   const upper = useRef<THREE.Group>(null);

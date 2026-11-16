@@ -1,12 +1,19 @@
 import type { Metadata } from "next";
+import { pageMetadata } from "@/lib/seo";
 import { PageHeader } from "@/components/sections/PageHeader";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { pages, type PageId } from "@/config/pages";
 
+/** Route of each registry entry, for canonical URLs. */
+const PAGE_PATHS: Partial<Record<PageId, string>> = {
+  map: "/explore/map",
+  intelligence: "/realms/intelligence",
+  technology: "/realms/technology",
+};
+
 export function placeholderMetadata(id: PageId): Metadata {
-  const page = pages[id];
-  return { title: page.title, description: page.description };
+  return pageMetadata({ ...pages[id], path: PAGE_PATHS[id] ?? `/${id}` });
 }
 
 /**
