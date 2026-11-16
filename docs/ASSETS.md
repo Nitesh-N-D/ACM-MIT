@@ -40,3 +40,23 @@ Integration steps:
 No third-party 3D, image or audio assets are in use.
 
 Team, alumni and gallery photographs are uploaded by administrators through the admin centre. Only publish photographs of people who have given permission.
+
+## Guardian model candidates (researched 2026-11-16, nothing downloaded)
+
+No free, openly licensed model was found that is a photoreal armoured male
+guardian with a rig and animation clips. The options below are what exists;
+licences must be re-read on the source page before any file is added.
+
+| Candidate | Source | Licence (as listed) | Notes |
+| --- | --- | --- | --- |
+| Universal Base Characters — male "Superhero" body | quaternius.com/packs/universalbasecharacters.html | CC0 | ~13k tris, humanoid rig, glTF. Clips come from the separate Universal Animation Library (CC0). Unarmoured, stylised-realistic: original armour would be attached to its bones. Recommended. |
+| Man Base Mesh (rigged) | grab3d.com/models/characters/man-base-character/ | CC0 | GLB, walk/run clips, tagged realistic, unarmoured. Size not stated. |
+| Knight Male (Quaternius) | app.cinevva.com/game-assets/free-3d-character-models | CC0 | GLB, 17 clips, ~5.9k vertices: low-poly and medieval, not the NEXUS design. |
+| Rigged Knight in Armor (Xali) | blendswap.com/3d/characters | CC0 | .blend only, needs export; no clips listed; medieval. |
+
+Rejected: three.js `Soldier.glb` / `Xbot.glb` (Mixamo origin, redistribution
+terms unclear); BlendSwap "Low Poly Male Knight" (CC-BY, low-poly); CGTrader
+and unlabelled Sketchfab models (not open licences).
+
+Until one of these is approved and added, the Sentinel remains the labelled
+procedural placeholder.
