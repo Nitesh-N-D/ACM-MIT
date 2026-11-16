@@ -175,6 +175,79 @@
 }
 
 /* ==========================================================================
+   GATEWAY ART (static SVG) — only transforms/opacity, compositor-friendly
+   ========================================================================== */
+
+.nexus-gateway-art .ga-ring {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ga-precess 18s linear infinite;
+}
+.nexus-gateway-art .ga-ring-b {
+  animation-duration: 26s;
+  animation-direction: reverse;
+}
+.nexus-gateway-art .ga-ring-c {
+  animation-duration: 34s;
+}
+.nexus-gateway-art .ga-pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: ga-pulse 4.8s var(--ease-nexus) infinite;
+}
+.nexus-gateway-art .ga-visor,
+.nexus-gateway-art .ga-seam {
+  animation: ga-flicker 6s ease-in-out infinite;
+}
+
+@keyframes ga-precess {
+  0% {
+    transform: rotate(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotate(180deg) scaleY(0.55);
+  }
+  100% {
+    transform: rotate(360deg) scaleY(1);
+  }
+}
+@keyframes ga-pulse {
+  0%,
+  100% {
+    opacity: 0.6;
+    transform: scale(0.9);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.08);
+  }
+}
+@keyframes ga-flicker {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+/* Page enter transition — CSS only, no JS cost. */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.page-enter {
+  animation: page-in 0.55s var(--ease-nexus) both;
+}
+
+/* ==========================================================================
    REDUCED MOTION
    ========================================================================== */
 

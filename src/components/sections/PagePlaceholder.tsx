@@ -17,7 +17,12 @@ export function PagePlaceholder({ id }: { id: PageId }) {
   const page = pages[id];
   return (
     <>
-      <PageHeader eyebrow={page.eyebrow} title={page.title} description={page.description} />
+      <PageHeader
+        eyebrow={page.eyebrow}
+        title={page.title}
+        description={page.description}
+        breadcrumbs={[{ label: "NEXUS", href: "/" }, { label: page.title }]}
+      />
       <Container className="py-16">
         <div className="nexus-frame max-w-2xl p-8">
           <p className="font-mono text-xs uppercase tracking-[0.22em] text-gold">

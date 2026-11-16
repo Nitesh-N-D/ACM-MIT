@@ -1,3 +1,5 @@
+import { territories } from "@/config/territories";
+
 /**
  * Global site configuration.
  *
@@ -51,14 +53,7 @@ export const ctaNav: NavItem = { label: "Join NEXUS", href: "/membership" };
 export const footerNav: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Territories",
-    items: [
-      { label: "Central Core", href: "/about", code: "T01" },
-      { label: "Intelligence Realm", href: "/realms/intelligence", code: "T02" },
-      { label: "Technology Frontier", href: "/realms/technology", code: "T03" },
-      { label: "Event Colosseum", href: "/events", code: "T04" },
-      { label: "Innovation Vault", href: "/vault", code: "T05" },
-      { label: "Legacy Sanctuary", href: "/team", code: "T06" },
-    ],
+    items: territories.map((t) => ({ label: t.short, href: t.href, code: t.code })),
   },
   {
     heading: "Chapter",
