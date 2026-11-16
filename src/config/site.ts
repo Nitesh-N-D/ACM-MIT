@@ -10,13 +10,15 @@ export const site = {
   title: "NEXUS: The Digital Civilization",
   tagline: "Discover. Connect. Innovate. Build.",
   description:
-    "NEXUS — the digital civilization of the ACM MIT Campus Student Chapter. Discover events, projects, learning and the people building the future.",
+    "NEXUS — the digital civilization of the ACM MIT Campus Student Chapter, Madras Institute of Technology. Discover events, projects, learning and the people building the future.",
   chapter: {
     // Taken from the official logo supplied by the chapter.
     shortName: "ACM MIT",
     fullName: "ACM MIT Campus Student Chapter",
-    // TODO(chapter): institution name, address, official email, socials.
-    institution: null as string | null,
+    institution: "Madras Institute of Technology",
+    university: "Anna University",
+    institutionUrl: "https://mitindia.edu/",
+    // TODO(chapter): official chapter email and social links.
     email: null as string | null,
   },
   logo: {

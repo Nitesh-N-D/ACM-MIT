@@ -39,7 +39,10 @@ export function SiteHeader() {
   const close = () => setOpen(false);
 
   return (
-    <header className="fixed inset-x-0 top-0 z-50 border-b border-line bg-void/75 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-void">
+    <header className="fixed inset-x-0 top-0 z-50">
+      {/* The blur lives on this inner bar, never on <header>: backdrop-filter
+          creates a containing block that would trap the fixed mobile panel. */}
+      <div className="border-b border-line bg-void/75 backdrop-blur-md supports-[not(backdrop-filter:blur(0))]:bg-void">
       <Container size="wide" className="flex h-(--spacing-header) items-center justify-between gap-6">
         <Logo />
 
@@ -81,9 +84,12 @@ export function SiteHeader() {
           >
             <SearchIcon />
           </Link>
-          <Link href={ctaNav.href} className={buttonClasses({ size: "sm", className: "hidden sm:inline-flex" })}>
-            {ctaNav.label}
-          </Link>
+          {/* Wrapper owns visibility: buttonClasses sets its own `display`. */}
+          <span className="hidden sm:block">
+            <Link href={ctaNav.href} className={buttonClasses({ size: "sm" })}>
+              {ctaNav.label}
+            </Link>
+          </span>
           <button
             ref={toggleRef}
             type="button"
@@ -97,6 +103,7 @@ export function SiteHeader() {
           </button>
         </div>
       </Container>
+      </div>
 
       {/* Mobile navigation panel */}
       <div

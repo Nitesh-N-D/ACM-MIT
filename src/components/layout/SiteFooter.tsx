@@ -49,7 +49,16 @@ export function SiteFooter() {
         className="flex flex-col gap-3 border-t border-line py-6 text-xs text-dim sm:flex-row sm:items-center sm:justify-between"
       >
         <p>
-          © {year} {site.chapter.fullName}.
+          © {year} {site.chapter.fullName} ·{" "}
+          <a
+            href={site.chapter.institutionUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-muted underline-offset-4 hover:text-cyan hover:underline"
+          >
+            {site.chapter.institution}
+          </a>
+          , {site.chapter.university}
         </p>
         <p className="font-mono uppercase tracking-[0.2em]">NEXUS · The Digital Civilization</p>
       </Container>
