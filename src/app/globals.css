@@ -1,0 +1,190 @@
+@import "tailwindcss";
+
+/* ==========================================================================
+   NEXUS DESIGN TOKENS
+   Single source of truth for colour, type, spacing and motion.
+   The NEXUS universe is intentionally dark-only (cinematic environment).
+   ========================================================================== */
+
+@theme {
+  /* --- Space (backgrounds, deepest → lightest) --- */
+  --color-void: #03050d;
+  --color-abyss: #060a18;
+  --color-deep: #0a1128;
+  --color-panel: #0d1734;
+  --color-panel-raised: #12204a;
+
+  /* --- Energy (accents) --- */
+  --color-electric: #2f6bff;
+  --color-cyan: #3fe4ff;
+  --color-violet: #8a6bff;
+  --color-gold: #d8b25e;
+
+  /* --- Metal & light (text, lines) --- */
+  --color-ice: #eef4ff;
+  --color-silver: #b9c4dc;
+  --color-muted: #8391b3;
+  --color-dim: #56617f;
+  --color-line: rgb(140 170 255 / 0.14);
+  --color-line-strong: rgb(140 170 255 / 0.28);
+
+  /* --- Status --- */
+  --color-success: #3ee6a8;
+  --color-warning: #f2c14e;
+  --color-danger: #ff5c7a;
+
+  /* --- Type scale (fluid) --- */
+  --text-display: clamp(2.75rem, 1.6rem + 5.2vw, 6.5rem);
+  --text-display--line-height: 0.95;
+  --text-title: clamp(2rem, 1.4rem + 2.6vw, 3.5rem);
+  --text-title--line-height: 1.05;
+  --text-eyebrow: 0.75rem;
+  --text-eyebrow--letter-spacing: 0.28em;
+
+  /* --- Layout --- */
+  --breakpoint-xs: 26rem;
+  --spacing-header: 4.5rem;
+
+  /* --- Motion --- */
+  --ease-nexus: cubic-bezier(0.22, 1, 0.36, 1);
+  --animate-orbit: orbit 6s linear infinite;
+  --animate-orbit-reverse: orbit 9s linear infinite reverse;
+  --animate-pulse-core: pulse-core 2.4s var(--ease-nexus) infinite;
+
+  @keyframes orbit {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  @keyframes pulse-core {
+    0%,
+    100% {
+      opacity: 0.55;
+      transform: scale(0.92);
+    }
+    50% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+}
+
+/* Fonts are injected by next/font as CSS variables on <html>. */
+@theme inline {
+  --font-display: var(--font-unbounded), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains), ui-monospace, monospace;
+}
+
+/* ==========================================================================
+   BASE
+   ========================================================================== */
+
+@layer base {
+  :root {
+    color-scheme: dark;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scroll-padding-top: calc(var(--spacing-header) + 1rem);
+  }
+
+  body {
+    min-height: 100dvh;
+    background-color: var(--color-void);
+    color: var(--color-silver);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4 {
+    color: var(--color-ice);
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  ::selection {
+    background: rgb(63 228 255 / 0.3);
+    color: var(--color-ice);
+  }
+
+  /* Visible, consistent keyboard focus everywhere. */
+  :focus-visible {
+    outline: 2px solid var(--color-cyan);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+}
+
+/* ==========================================================================
+   NEXUS ATMOSPHERE
+   Static, GPU-cheap backdrop shared by every 2D page. Also serves as the
+   visual fallback when WebGL is unavailable (Phase 3+).
+   ========================================================================== */
+
+@layer components {
+  .nexus-atmosphere {
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(60rem 40rem at 50% -10%, rgb(47 107 255 / 0.16), transparent 70%),
+      radial-gradient(40rem 30rem at 90% 30%, rgb(138 107 255 / 0.08), transparent 70%),
+      var(--color-void);
+  }
+
+  /* Faint architectural grid, fades toward the bottom. */
+  .nexus-atmosphere::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--color-line) 1px, transparent 1px),
+      linear-gradient(90deg, var(--color-line) 1px, transparent 1px);
+    background-size: 72px 72px;
+    opacity: 0.35;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black, transparent 75%);
+  }
+
+  /* Small uppercase technical label used above headings. */
+  .eyebrow {
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    letter-spacing: var(--text-eyebrow--letter-spacing);
+    text-transform: uppercase;
+    color: var(--color-cyan);
+  }
+
+  /* Angled corner frame — the NEXUS alternative to rounded cards. */
+  .nexus-frame {
+    position: relative;
+    border: 1px solid var(--color-line);
+    background: linear-gradient(180deg, rgb(13 23 52 / 0.7), rgb(6 10 24 / 0.7));
+    clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 14px, 100% 100%, 14px 100%, 0 calc(100% - 14px));
+  }
+}
+
+/* ==========================================================================
+   REDUCED MOTION
+   ========================================================================== */
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
