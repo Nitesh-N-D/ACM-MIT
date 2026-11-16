@@ -14,12 +14,20 @@ export function SiteFooter() {
         aria-hidden="true"
         className="absolute inset-x-0 -top-px h-px bg-linear-to-r from-transparent via-cyan/60 to-transparent"
       />
-      <Container size="wide" className="grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)]">
+      <Container
+        size="wide"
+        className="grid gap-12 py-16 md:grid-cols-[1.4fr_repeat(3,1fr)]"
+      >
         <div className="max-w-sm">
           <Logo />
-          <p className="mt-6 text-sm leading-relaxed text-muted">{site.description}</p>
+          <p className="mt-6 text-sm leading-relaxed text-muted">
+            {site.description}
+          </p>
           <p className="eyebrow mt-6">{site.tagline}</p>
-          <ul className="mt-8 flex flex-wrap gap-2" aria-label="Official channels">
+          <ul
+            className="mt-8 flex flex-wrap gap-2"
+            aria-label="Official channels"
+          >
             {site.socials.map((s) => (
               <li key={s.href}>
                 <a
@@ -47,7 +55,9 @@ export function SiteFooter() {
 
         {footerNav.map((group) => (
           <nav key={group.heading} aria-label={group.heading}>
-            <h2 className="font-mono text-[0.7rem] uppercase tracking-[0.24em] text-dim">{group.heading}</h2>
+            <h2 className="font-mono text-[0.7rem] uppercase tracking-[0.24em] text-dim">
+              {group.heading}
+            </h2>
             <ul className="mt-5 space-y-3">
               {group.items.map((item) => (
                 <li key={item.href + item.label}>
@@ -85,7 +95,9 @@ export function SiteFooter() {
           </a>
           , {site.chapter.university}
         </p>
-        <p className="font-mono uppercase tracking-[0.2em]">NEXUS · The Digital Civilization</p>
+        <p className="font-mono uppercase tracking-[0.2em]">
+          NEXUS · The Digital Civilization
+        </p>
       </Container>
     </footer>
   );

@@ -261,3 +261,35 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* User-chosen reduced motion (Gateway controls) mirrors the OS setting. */
+html[data-motion="reduced"] *,
+html[data-motion="reduced"] *::before,
+html[data-motion="reduced"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* ==========================================================================
+   GATEWAY INTRO — set by the inline boot script before first paint so the
+   hero copy never flashes before the activation sequence.
+   ========================================================================== */
+
+[data-hero-content],
+[data-hero-scrim],
+[data-hero-cue] {
+  transition:
+    opacity 0.9s var(--ease-nexus),
+    visibility 0.9s;
+}
+html[data-intro="play"] [data-hero-content],
+html[data-intro="play"] [data-hero-scrim],
+html[data-intro="play"] [data-hero-cue] {
+  opacity: 0;
+  visibility: hidden;
+}
+html[data-intro="play"] [data-gateway-static] {
+  opacity: 0 !important;
+}

@@ -1,3 +1,5 @@
+import { GatewayControls } from "@/components/gateway/GatewayControls";
+import { GatewayStage } from "@/components/gateway/GatewayStage";
 import { Hero } from "@/components/home/Hero";
 import { JoinBand } from "@/components/home/JoinBand";
 import { Pillars } from "@/components/home/Pillars";
@@ -9,7 +11,7 @@ import { Button } from "@/components/ui/Button";
 export default function HomePage() {
   return (
     <>
-      <Hero />
+      <Hero visual={<GatewayStage />} overlay={<GatewayControls />} />
 
       <section aria-labelledby="territories-heading" className="border-t border-line py-24">
         <Container>

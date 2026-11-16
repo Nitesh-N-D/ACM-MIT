@@ -8,8 +8,10 @@ type HeroProps = {
   heading?: string;
   subheading?: string;
   tagline?: string;
-  /** Replaces the static art (Phase 3 mounts the 3D Gateway here). */
+  /** Replaces the static art; a custom visual owns its own layout (full bleed). */
   visual?: ReactNode;
+  /** Layer above the visual (Gateway intro controls). */
+  overlay?: ReactNode;
 };
 
 /**
@@ -21,6 +23,7 @@ export function Hero({
   subheading = "A new civilization of innovation",
   tagline = site.tagline,
   visual,
+  overlay,
 }: HeroProps) {
   const [lead, ...rest] = heading.split(" ");
   const last = rest.pop();
@@ -32,12 +35,19 @@ export function Hero({
     >
       <div className="absolute inset-0 -z-10">
         {/* On wide screens the gateway sits right of the copy instead of behind it */}
-        <div className="absolute inset-0 lg:left-[28%]">{visual ?? <GatewayArt className="size-full" />}</div>
+        {visual ?? (
+          <div className="absolute inset-0 lg:left-[28%]">
+            <GatewayArt className="size-full" />
+          </div>
+        )}
         {/* Legibility scrims: left on desktop, bottom on mobile */}
-        <div className="absolute inset-0 bg-linear-to-t from-void via-void/60 to-transparent sm:bg-linear-to-r sm:from-void sm:via-void/50 sm:to-transparent lg:via-void/20" />
+        <div
+          data-hero-scrim
+          className="pointer-events-none absolute inset-0 bg-linear-to-t from-void via-void/60 to-transparent sm:bg-linear-to-r sm:from-void sm:via-void/50 sm:to-transparent lg:via-void/20"
+        />
       </div>
 
-      <Container className="relative py-16">
+      <Container className="relative py-16" data-hero-content>
         <p className="eyebrow">{site.chapter.fullName}</p>
         <h1 id="hero-heading" className="mt-6 max-w-3xl font-display text-display font-semibold tracking-tight">
           {lead} {rest.join(" ")} {last && <span className="text-cyan">{last}</span>}
@@ -61,10 +71,12 @@ export function Hero({
       </Container>
 
       {/* Scroll cue */}
-      <div aria-hidden="true" className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex">
+      <div data-hero-cue aria-hidden="true" className="absolute bottom-6 left-1/2 hidden -translate-x-1/2 flex-col items-center gap-2 sm:flex">
         <span className="font-mono text-[0.6rem] tracking-[0.3em] text-dim uppercase">Descend</span>
         <span className="h-10 w-px bg-linear-to-b from-cyan/70 to-transparent" />
       </div>
+
+      {overlay}
     </section>
   );
 }
