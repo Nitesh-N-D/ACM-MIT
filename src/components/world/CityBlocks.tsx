@@ -49,6 +49,8 @@ export function CityBlocks({ count, level }: { count: number; level: () => numbe
       const x = (r() * 2 - 1) * CITY_HALF_WIDTH;
       const z = CITY_EDGE - r() * CITY_DEPTH;
       if (Math.abs(x) < AVENUE_HALF_WIDTH) continue;
+      // Keep the corridor under the elevated ring road around the Core clear.
+      if (Math.abs(Math.hypot(x - DISTRICT_POS.core[0], z - DISTRICT_POS.core[1]) - (DISTRICT_CLEARANCE.core + 14)) < 4.5) continue;
       if (districts.some(([id, [bx, bz]]) => Math.hypot(x - bx, z - bz) < DISTRICT_CLEARANCE[id] + 3)) continue;
       const dist = Math.min(1, (CHASM.far - z) / CITY_DEPTH);
       const w = 2.2 + r() * 3.6;

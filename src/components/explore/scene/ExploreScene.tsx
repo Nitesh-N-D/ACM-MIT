@@ -15,6 +15,7 @@ import { Bridge } from "@/components/gateway/scene/World";
 import { CityBlocks, Ground } from "@/components/world/CityBlocks";
 import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
+import { Surroundings } from "@/components/world/Surroundings";
 import { isTerritory } from "../destinations";
 import { explore } from "../store";
 import { CameraRig } from "./CameraRig";
@@ -173,6 +174,7 @@ export function ExploreScene({ activity, reducedMotion }: { activity: Activity; 
       <Gate />
       <Bridge />
       <CityBlocks count={tier.towers} level={() => arrive.current * 0.9} />
+      <Surroundings density={tier.towers / 160} level={() => arrive.current} />
       <Avenues focus={focus} arrive={arrive} />
       {territories.map((t, i) => (
         <District key={t.id} id={t.id} index={i} focus={focus} arrive={arrive} activity={activity[t.id] ?? 0} />
