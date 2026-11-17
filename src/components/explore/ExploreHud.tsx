@@ -4,7 +4,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { HeritageEntry } from "@/config/heritage";
 import { getTerritory, territories } from "@/config/territories";
-import { DESTINATIONS, PLACE_IDS, destination, isHeritage, isTerritory, type FocusId } from "./destinations";
+import { DESTINATIONS, PLACE_IDS, destination, districtOf, interiorOf, isHeritage, isInterior, isTerritory, type FocusId } from "./destinations";
 import { HeritagePanel } from "./HeritagePanel";
 import { cameraInput, explore, useExplore, type ExploreMode } from "./store";
 
@@ -35,8 +35,14 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
   const [help, setHelp] = useState(true);
 
   const is3d = view === "3d";
-  const territory = isTerritory(focus) ? getTerritory(focus) : null;
+  const district = districtOf(focus);
+  const territory = district ? getTerritory(district) : null;
+  const indoors = is3d && isInterior(focus);
   const place = destination(focus);
+
+  // Stepping through a door is a camera cut; a short fade from black covers it.
+  const [veil, setVeil] = useState({ indoors, n: 0 });
+  if (veil.indoors !== indoors) setVeil({ indoors, n: veil.n + 1 });
 
   return (
     <>
@@ -119,7 +125,7 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
           style={{ borderTopColor: territory.accent }}
         >
           <p className="font-mono text-[0.62rem] tracking-[0.2em] uppercase" style={{ color: territory.accent }}>
-            {territory.code} · {territory.purpose}
+            {territory.code} · {indoors ? "Inside · Reception" : territory.purpose}
           </p>
           <h2 className="mt-2 font-display text-lg tracking-[0.08em] text-ice uppercase">{territory.name}</h2>
           <p className="mt-2 text-sm leading-relaxed text-silver">{territory.description}</p>
@@ -131,8 +137,18 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
             ))}
           </ul>
           <div className="mt-4 flex flex-wrap gap-2">
-            <Button href={territory.href} size="sm">
-              Enter district
+            {is3d && !indoors && (
+              <Button size="sm" onClick={() => explore.go(interiorOf(territory.id))}>
+                Step inside
+              </Button>
+            )}
+            {indoors && (
+              <Button size="sm" onClick={() => explore.go(territory.id)}>
+                Step outside
+              </Button>
+            )}
+            <Button href={territory.href} variant={is3d ? "ghost" : "primary"} size="sm">
+              {indoors ? "Open district page" : "Enter district"}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => explore.reset()}>
               Back to overview
@@ -141,13 +157,15 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
         </aside>
       )}
 
+      {veil.n > 0 && !reducedMotion && <div key={veil.n} aria-hidden="true" className="nexus-veil pointer-events-none absolute inset-0 z-10 bg-black" />}
+
       {isHeritage(focus) && <HeritagePanel entries={heritage} inside={is3d && focus === "archive"} can3d={is3d} />}
 
       {/* Destinations */}
       <nav aria-label="World destinations" className="absolute inset-x-0 bottom-0 z-20 border-t border-line bg-void/85 backdrop-blur-sm">
         <ul className="flex gap-1.5 overflow-x-auto px-3 py-2.5 sm:px-4">
           {(is3d ? DESTINATIONS : MAP_PLACES).map((d) => {
-            const on = focus === d.id;
+            const on = focus === d.id || district === d.id;
             const accent = isTerritory(d.id) ? territories.find((t) => t.id === d.id)?.accent : d.id === "heritage" ? "#e8c46a" : undefined;
             return (
               <li key={d.id} className="shrink-0">

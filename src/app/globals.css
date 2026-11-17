@@ -247,6 +247,20 @@
   animation: page-in 0.55s var(--ease-nexus) both;
 }
 
+/* Explore: fade from black over the cut into or out of an interior. */
+@keyframes nexus-veil {
+  0%,
+  20% {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+.nexus-veil {
+  animation: nexus-veil 0.8s ease-out both;
+}
+
 /* ==========================================================================
    REDUCED MOTION
    ========================================================================== */

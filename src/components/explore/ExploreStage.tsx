@@ -6,7 +6,7 @@ import type { HeritageEntry } from "@/config/heritage";
 import type { TerritoryId } from "@/config/territories";
 import { CityMap } from "./CityMap";
 import { ExploreHud } from "./ExploreHud";
-import { DESTINATIONS, isHeritage, isTerritory, type FocusId } from "./destinations";
+import { isFocusId, isHeritage, isTerritory } from "./destinations";
 import type { Activity } from "./scene/ExploreScene";
 import { explore, useExplore } from "./store";
 
@@ -50,9 +50,9 @@ export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE }:
 
   useEffect(() => {
     explore.boot();
-    // Deep link: /explore?to=<destination> opens there (e.g. ?to=heritage).
+    // Deep link: /explore?to=<destination> opens there (e.g. ?to=heritage, ?to=vault:in).
     const to = new URLSearchParams(window.location.search).get("to");
-    if (to && DESTINATIONS.some((d) => d.id === to)) explore.go(to as FocusId);
+    if (to && isFocusId(to)) explore.go(to);
     return () => explore.dispose();
   }, []);
 

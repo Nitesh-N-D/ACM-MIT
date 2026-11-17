@@ -5,7 +5,9 @@ import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { HERITAGE_GALLERIES, type HeritageEntry, type HeritageGallery } from "@/config/heritage";
+import { isInterior } from "@/components/explore/destinations";
 import { explore } from "@/components/explore/store";
+import { FONT, canvasTexture, wrap } from "./canvasText";
 import { GROUND_Y, HERITAGE } from "./layout";
 
 /**
@@ -44,36 +46,6 @@ const PANEL_W = 8;
 const PANEL_H = 4;
 /** How many exhibits a wall timeline can show legibly. */
 const WALL_MAX = 9;
-
-const FONT = "system-ui, 'Segoe UI', sans-serif";
-
-function canvasTexture(c: HTMLCanvasElement) {
-  const t = new THREE.CanvasTexture(c);
-  t.colorSpace = THREE.SRGBColorSpace;
-  t.anisotropy = 4;
-  return t;
-}
-
-function wrap(x: CanvasRenderingContext2D, text: string, width: number, lines: number) {
-  const words = text.split(/\s+/);
-  const out: string[] = [];
-  let line = "";
-  for (const w of words) {
-    const next = line ? `${line} ${w}` : w;
-    if (x.measureText(next).width > width && line) {
-      out.push(line);
-      line = w;
-      if (out.length === lines) break;
-    } else line = next;
-  }
-  if (out.length < lines && line) out.push(line);
-  if (out.length === lines && words.join(" ") !== out.join(" ")) {
-    let last = out[lines - 1]!;
-    while (last && x.measureText(`${last}…`).width > width) last = last.slice(0, -1);
-    out[lines - 1] = `${last.trimEnd()}…`;
-  }
-  return out;
-}
 
 /** "ACM HERITAGE ARCHIVE", engraved in gold on the frieze. */
 function friezeTexture() {
@@ -369,7 +341,7 @@ export function HeritageArchive({ entries = NONE, level, interactive = true }: P
     }
     if (label.current) {
       label.current.dataset.on = f > 0.4 ? "true" : "false";
-      label.current.style.visibility = inside ? "hidden" : "visible";
+      label.current.style.visibility = inside || isInterior(s.focus) ? "hidden" : "visible";
     }
   });
 

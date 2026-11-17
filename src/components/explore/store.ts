@@ -5,7 +5,7 @@ import type { HeritageGallery } from "@/config/heritage";
 import type { TerritoryId } from "@/config/territories";
 import { prefs } from "@/lib/gateway/prefs";
 import { detectTier, resolveTier, type Tier } from "@/lib/gateway/quality";
-import { GALLERY_AZ, isTerritory, type FocusId } from "./destinations";
+import { GALLERY_AZ, districtOf, type FocusId } from "./destinations";
 
 /**
  * cinematic — the camera tours the world by itself.
@@ -75,7 +75,7 @@ export const explore = {
   go(id: FocusId) {
     // Inside the Archive the camera faces the open gallery's wall.
     const travelAz = id === "archive" ? GALLERY_AZ[state.gallery] : null;
-    set({ focus: id, mode: isTerritory(id) ? "district" : "free", travel: state.travel + 1, travelAz, exhibit: null });
+    set({ focus: id, mode: districtOf(id) ? "district" : "free", travel: state.travel + 1, travelAz, exhibit: null });
   },
   /** Cinematic tour advances without leaving cinematic mode. */
   tour(id: FocusId) {
@@ -92,7 +92,7 @@ export const explore = {
   },
   setMode(mode: ExploreMode) {
     if (mode === "cinematic") set({ mode, focus: "overview", travel: state.travel + 1 });
-    else if (mode === "district") set({ mode, focus: isTerritory(state.focus) ? state.focus : "core", travel: state.travel + 1 });
+    else if (mode === "district") set({ mode, focus: districtOf(state.focus) ? state.focus : "core", travel: state.travel + 1 });
     else set({ mode });
   },
   /** Any manual steering ends the automatic tour. */

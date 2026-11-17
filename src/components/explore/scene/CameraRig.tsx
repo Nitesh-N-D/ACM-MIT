@@ -3,7 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import { GROUND_Y } from "@/components/world/layout";
-import { TOUR, destination } from "../destinations";
+import { TOUR, destination, isInterior } from "../destinations";
 import { cameraInput, explore } from "../store";
 
 /**
@@ -15,6 +15,9 @@ import { cameraInput, explore } from "../store";
  * - Wheel and two-finger pinch zoom, limited per destination.
  * - Everything is damped: input moves a goal, the camera eases toward it.
  * - Travelling to a destination moves the orbit centre, radius and angle.
+ * - Stepping into or out of a district interior is a cut (the HUD fades
+ *   through it): the rooms lie below the city, so easing would cross the
+ *   ground.
  */
 
 const POL_MIN = 0.3;
@@ -42,6 +45,8 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   const goal = useRef<Orbit>({ x: 0, y: 6, z: -50, r: 150, az: 0, pol: 1.0 });
   const limits = useRef({ min: 60, max: 240 });
   const seen = useRef(-1);
+  const inside = useRef(false);
+  const floor = useRef(GROUND_Y + 1.2);
   const drag = useRef({ active: false, idle: 0, tour: 0 });
 
   useEffect(() => {
@@ -139,7 +144,12 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
       // Take the shortest way round rather than unwinding earlier turns.
       g.az = az + TAU * Math.round((g.az - az) / TAU);
       limits.current = { min: dest.min, max: dest.max };
+      floor.current = dest.floor ?? GROUND_Y + 1.2;
       d.tour = 0;
+      if (isInterior(s.focus) !== inside.current) {
+        inside.current = !inside.current;
+        Object.assign(c, g);
+      }
     }
 
     // Button nudges.
@@ -176,8 +186,8 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
     const sin = Math.sin(c.pol);
     camera.position.set(
       c.x + c.r * sin * Math.sin(c.az),
-      // Never dip below the ground.
-      Math.max(GROUND_Y + 1.2, c.y + c.r * Math.cos(c.pol)),
+      // Never dip below the ground (or an interior's floor).
+      Math.max(floor.current, c.y + c.r * Math.cos(c.pol)),
       c.z + c.r * sin * Math.cos(c.az),
     );
     camera.lookAt(c.x, c.y, c.z);

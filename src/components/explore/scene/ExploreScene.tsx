@@ -20,7 +20,8 @@ import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Pedestrians } from "@/components/world/Pedestrians";
 import { Surroundings } from "@/components/world/Surroundings";
-import { isTerritory } from "../destinations";
+import { DistrictInterior } from "@/components/world/interiors";
+import { interiorOf, isInterior, isTerritory } from "../destinations";
 import { explore } from "../store";
 import { CameraRig } from "./CameraRig";
 
@@ -54,7 +55,10 @@ function District({ id, index, focus, arrive, activity }: { id: TerritoryId; ind
   const label = useRef<HTMLButtonElement>(null);
 
   useFrame(() => {
-    if (label.current) label.current.dataset.on = focus[id] > 0.4 ? "true" : "false";
+    if (!label.current) return;
+    label.current.dataset.on = focus[id] > 0.4 ? "true" : "false";
+    // Labels are DOM overlays: geometry cannot hide them, so they go when the visitor is indoors.
+    label.current.style.visibility = isInterior(explore.get().focus) ? "hidden" : "visible";
   });
 
   return (
@@ -79,7 +83,8 @@ function District({ id, index, focus, arrive, activity }: { id: TerritoryId; ind
         onClick={(e) => {
           e.stopPropagation();
           if (e.delta > 6) return; // the end of a drag, not a click
-          explore.go(id);
+          // A second click on the district in view steps inside.
+          explore.go(explore.get().focus === id ? interiorOf(id) : id);
         }}
       >
         <cylinderGeometry args={[DISTRICT_CLEARANCE[id] * 0.8, DISTRICT_CLEARANCE[id] * 0.8, h, 12]} />
@@ -185,6 +190,7 @@ export function ExploreScene({ activity, heritage, reducedMotion }: { activity: 
         <District key={t.id} id={t.id} index={i} focus={focus} arrive={arrive} activity={activity[t.id] ?? 0} />
       ))}
       <HeritageArchive entries={heritage} level={() => arrive.current} />
+      <DistrictInterior />
       <CameraRig reducedMotion={reducedMotion} />
     </>
   );

@@ -56,6 +56,15 @@ export const DISTRICT_CLEARANCE: Record<TerritoryId, number> = {
  */
 export const HERITAGE = { x: -17, z: -96, r: 12 } as const;
 
+/**
+ * District interiors are self-contained rooms built on demand far below each
+ * district (entered through a fade), so no landmark geometry intrudes and
+ * nothing is loaded until a visitor steps inside.
+ */
+export const INTERIOR_Y = GROUND_Y - 60;
+/** Interior room: width (x), depth (z), height; the entrance is on the +z wall. */
+export const ROOM = { w: 18, d: 14, h: 6.5 } as const;
+
 /** The chasm between the gateway threshold and the city (z range). */
 export const CHASM = { near: -14, far: -38 } as const;
 
