@@ -36,7 +36,7 @@ const HEIGHT: Record<TerritoryId, number> = { core: 54, intelligence: 22, fronti
 
 const PLACES: Destination[] = [
   { id: "overview", label: "Overview", hint: "The whole civilization", target: [0, 6, -50], radius: 150, az: 0, pol: 1.0, min: 60, max: 240 },
-  { id: "sentinel", label: "The Sentinel", hint: "Guardian of the gateway", target: [0, 6.2, -2.2], radius: 17, az: 0.35, pol: 1.38, min: 3.2, max: 60 },
+  { id: "sentinel", label: "The Sentinel", hint: "Guardian of the gateway", target: [0, 6.2, -1.7], radius: 17, az: 0.35, pol: 1.38, min: 3.2, max: 60 },
   { id: "sword", label: "The Sword Key", hint: "Planted in the lock of the platform", target: [0, 3.2, -0.6], radius: 6.4, az: -0.45, pol: 1.25, min: 1.8, max: 30 },
   { id: "gateway", label: "The Gateway", hint: "Threshold of NEXUS", target: [0, 8, -9.5], radius: 46, az: 0.5, pol: 1.28, min: 16, max: 120 },
   { id: "arrival", label: "Arrival Quarter", hint: "The city behind the gateway", target: [0, 6, 6], radius: 44, az: 3.5, pol: 1.3, min: 14, max: 120 },

@@ -13,7 +13,9 @@ import { clamp01, type Channels } from "./state";
 export const ease = (x: number) => x * x * (3 - 2 * x);
 
 /** The Sentinel's feet, in world space. */
-export const SENTINEL_ORIGIN = new THREE.Vector3(0, 0.3, -2.2);
+// Close enough to the lock that, with the sword planted, his hands rest on
+// the pommel with the elbows bent rather than reaching for it at arm's length.
+export const SENTINEL_ORIGIN = new THREE.Vector3(0, 0.3, -1.7);
 /** Scene height of the guardian. */
 export const SENTINEL_HEIGHT = 8.4;
 /** Model metres → scene units (public/models/sentinel.glb is 1.901 m tall). */
@@ -45,13 +47,13 @@ export const PLATFORM_CENTER = new THREE.Vector3(0, 0.3, -0.6);
 export const SWORD = {
   /** Forward of his feet: exactly over the platform's centre. */
   z: (PLATFORM_CENTER.z - SENTINEL_ORIGIN.z) / SENTINEL_K,
-  /** Tip height when struck home: just inside the socket. */
-  tipY: -0.05,
+  /** Tip height when struck home: seated in the socket, the grip at his belt. */
+  tipY: -0.08,
   /** Tip height while he holds it, before the strike. */
   heldY: 0.2,
   /** Tip height raised, ready to strike. */
   raisedY: 0.4,
-  scale: 1.35,
+  scale: 1.22,
   /** How far it is driven home when he turns it. */
   sink: 0.05,
   /** And how far it turns, like a key (radians). */
