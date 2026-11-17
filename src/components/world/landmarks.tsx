@@ -5,6 +5,7 @@ import { useLayoutEffect, useMemo, useRef, type ReactNode } from "react";
 import * as THREE from "three";
 import { getTerritory, type TerritoryId } from "@/config/territories";
 import { Glow } from "@/components/gateway/scene/Glow";
+import { CoreTower } from "./core";
 
 /**
  * District landmarks — one distinct piece of architecture per territory.
@@ -62,34 +63,8 @@ function RingOf({ count, radius, size, y, material, face = true }: { count: numb
   );
 }
 
-function Core({ body, alt, lit }: Mats) {
-  return (
-    <>
-      <B m={body} p={[0, 2, 0]}><cylinderGeometry args={[6, 7.5, 4, 8]} /></B>
-      <B m={alt} p={[0, 4.6, 0]}><cylinderGeometry args={[4.6, 5.6, 1.2, 8]} /></B>
-      <B m={body} p={[0, 20, 0]}><cylinderGeometry args={[1.9, 3.3, 30, 8]} /></B>
-      <B m={alt} p={[0, 43, 0]}><cylinderGeometry args={[0.35, 1.7, 16, 8]} /></B>
-      <B m={lit} p={[0, 52.5, 0]}><octahedronGeometry args={[1.1, 0]} /></B>
-      {[0, 1, 2, 3].map((i) => (
-        <B key={i} m={body} p={[Math.cos((i * Math.PI) / 2 + Math.PI / 4) * 4.2, 9, Math.sin((i * Math.PI) / 2 + Math.PI / 4) * 4.2]} r={[0, -(i * Math.PI) / 2 - Math.PI / 4, 0.16]}>
-          <boxGeometry args={[1.1, 18, 0.5]} />
-        </B>
-      ))}
-      {[
-        [5.2, 16], [3.9, 27], [2.7, 37],
-      ].map(([r, y]) => (
-        <group key={y} position={[0, y!, 0]} rotation={[Math.PI / 2, 0, 0]}>
-          <B m={alt}><torusGeometry args={[r!, 0.22, 4, 48]} /></B>
-          <B m={lit}><torusGeometry args={[r! - 0.24, 0.07, 5, 48]} /></B>
-        </group>
-      ))}
-      {[0, 1, 2, 3].map((i) => (
-        <B key={`s${i}`} m={lit} p={[Math.cos((i * Math.PI) / 2) * 2.75, 19, Math.sin((i * Math.PI) / 2) * 2.75]} r={[0, -(i * Math.PI) / 2, 0]}>
-          <boxGeometry args={[0.1, 24, 0.22]} />
-        </B>
-      ))}
-    </>
-  );
+function Core(m: Mats) {
+  return <CoreTower body={m.body} alt={m.alt} lit={m.lit} />;
 }
 
 function Intelligence({ body, alt, lit }: Mats) {
