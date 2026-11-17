@@ -8,10 +8,10 @@ import { cn } from "@/lib/cn";
  *  - Permanent fallback for the 3D Gateway (no WebGL, reduced motion,
  *    low-power mode) — so it must stand on its own.
  *
- * Composition: sealed monumental gate → the Nexus Sentinel (original
- * geometric design) → the Nexus Artifact held at its core → the
- * Resonance Platform below. Only the quantum rings and core pulse move,
- * via CSS (disabled under prefers-reduced-motion).
+ * Composition: sealed monumental gate → the Sentinel, both hands on the
+ * pommel of the Sword Key → the blade planted point-down in the lock at the
+ * centre of the Resonance Platform. Only the hilt glow, visor and gate seam
+ * move, via CSS (disabled under prefers-reduced-motion).
  */
 
 // Deterministic star field (same on server and client — no hydration drift).
@@ -37,7 +37,7 @@ export function GatewayArt({ className, glow = true }: { className?: string; glo
       preserveAspectRatio="xMidYMax slice"
       className={cn("nexus-gateway-art", className)}
       role="img"
-      aria-label="The NEXUS Gateway: a colossal Sentinel holding a glowing crystal artifact before a sealed monumental gate."
+      aria-label="The NEXUS Gateway: an armoured Sentinel resting both hands on a glowing sword planted in the lock of the platform, before a sealed monumental gate."
     >
       <defs>
         <radialGradient id="ga-sky" cx="50%" cy="38%" r="70%">
@@ -50,10 +50,10 @@ export function GatewayArt({ className, glow = true }: { className?: string; glo
           <stop offset="0.4" stopColor="#2f6bff" stopOpacity="0.18" />
           <stop offset="1" stopColor="#2f6bff" stopOpacity="0" />
         </radialGradient>
-        <linearGradient id="ga-crystal" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0" stopColor="#c9f6ff" />
-          <stop offset="0.45" stopColor="#3fe4ff" />
-          <stop offset="1" stopColor="#8a6bff" />
+        <linearGradient id="ga-blade" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#3fe4ff" />
+          <stop offset="0.5" stopColor="#e9fbff" />
+          <stop offset="1" stopColor="#2f9fd0" />
         </linearGradient>
         <linearGradient id="ga-seam" x1="0" y1="0" x2="0" y2="1">
           <stop offset="0" stopColor="#3fe4ff" stopOpacity="0" />
@@ -100,7 +100,7 @@ export function GatewayArt({ className, glow = true }: { className?: string; glo
         <path d="M800 252V900" stroke="url(#ga-seam)" strokeWidth="3" className={glow ? "ga-seam" : undefined} />
       </g>
 
-      {/* Ambient glow behind the artifact */}
+      {/* Ambient glow behind the hilt */}
       <circle cx="800" cy="470" r="330" fill="url(#ga-core-glow)" />
 
       {/* The Nexus Sentinel — original angular guardian silhouette */}
@@ -112,41 +112,37 @@ export function GatewayArt({ className, glow = true }: { className?: string; glo
         {/* Shoulders */}
         <path d="M690 320 610 345l-18 70 70 10 30-60Z" fill="#111c44" stroke="#8a9ccc" strokeOpacity="0.6" strokeWidth="1.5" />
         <path d="M910 320 990 345l18 70-70 10-30-60Z" fill="#111c44" stroke="#8a9ccc" strokeOpacity="0.6" strokeWidth="1.5" />
-        {/* Arms reaching to the artifact */}
-        <path d="M600 415 625 520l120-20 10 30-140 30-50-140Z" fill="#0d1638" stroke="#6c7fb3" strokeOpacity="0.4" />
-        <path d="M1000 415 975 520l-120-20-10 30 140 30 50-140Z" fill="#0d1638" stroke="#6c7fb3" strokeOpacity="0.4" />
+        {/* Arms: elbows out, forearms down to the grip */}
+        <path d="M600 415 628 528 784 470l6 30-150 58-55-128Z" fill="#0d1638" stroke="#6c7fb3" strokeOpacity="0.4" />
+        <path d="M1000 415 972 528 816 470l-6 30 150 58 55-128Z" fill="#0d1638" stroke="#6c7fb3" strokeOpacity="0.4" />
         {/* Helmet */}
         <path d="M800 190 842 214l10 64-52 30-52-30 10-64Z" fill="#111c44" stroke="#b9c4dc" strokeOpacity="0.7" strokeWidth="1.5" />
         <path d="M800 160v34" stroke="#b9c4dc" strokeOpacity="0.6" strokeWidth="2" />
         {/* Visor */}
         <path d="M768 246h64" stroke="#3fe4ff" strokeWidth="3.5" strokeLinecap="round" className={glow ? "ga-visor" : undefined} />
         {/* Armor channels */}
-        <path d="M800 312v120M740 360l30 50M860 360l-30 50M720 640h160M800 640v220" stroke="#3fe4ff" strokeOpacity="0.45" strokeWidth="1.5" fill="none" />
+        <path d="M800 312v96M740 360l30 50M860 360l-30 50M720 640h160M800 640v220" stroke="#3fe4ff" strokeOpacity="0.45" strokeWidth="1.5" fill="none" />
       </g>
 
-      {/* The Nexus Artifact */}
-      <g transform="translate(800 470)">
-        <circle r="90" fill="url(#ga-core-glow)" className={glow ? "ga-pulse" : undefined} />
-        {/* Quantum rings */}
-        <g className={glow ? "ga-ring ga-ring-a" : undefined}>
-          <ellipse rx="118" ry="34" fill="none" stroke="#b9c4dc" strokeWidth="2.5" strokeOpacity="0.8" />
-          <ellipse rx="118" ry="34" fill="none" stroke="#3fe4ff" strokeWidth="1" strokeDasharray="6 14" />
-        </g>
-        <g transform="rotate(62)">
-          <g className={glow ? "ga-ring ga-ring-b" : undefined}>
-            <ellipse rx="96" ry="26" fill="none" stroke="#b9c4dc" strokeWidth="2" strokeOpacity="0.7" />
-          </g>
-        </g>
-        <g transform="rotate(-58)">
-          <g className={glow ? "ga-ring ga-ring-c" : undefined}>
-            <ellipse rx="80" ry="22" fill="none" stroke="#8a6bff" strokeWidth="1.8" strokeOpacity="0.9" />
-          </g>
-        </g>
-        {/* Crystal conduit */}
-        <path d="M0-58 26-8 0 58-26-8Z" fill="url(#ga-crystal)" />
-        <path d="M0-58 26-8 0 6Z" fill="#ffffff" fillOpacity="0.35" />
-        <path d="M0-58v116M-26-8h52" stroke="#ffffff" strokeOpacity="0.35" strokeWidth="1" />
-        <circle r="6" fill="#ffffff" />
+      {/* The Sword Key, planted point-down in the lock */}
+      <g>
+        <circle cx="800" cy="478" r="70" fill="url(#ga-core-glow)" className={glow ? "ga-pulse" : undefined} />
+        {/* Blade */}
+        <path d="M788 520h24l-4 290-8 32-8-32Z" fill="url(#ga-blade)" />
+        <path d="M800 524v310" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="1.2" />
+        {/* Crossguard */}
+        <path d="M736 506h128l8 10-8 6H736l-8-6Z" fill="#1a2858" stroke="#b9c4dc" strokeOpacity="0.8" strokeWidth="1.5" />
+        <circle cx="800" cy="514" r="5" fill="#3fe4ff" />
+        {/* Grip and pommel */}
+        <path d="M792 444h16v62h-16Z" fill="#0a1230" stroke="#6c7fb3" strokeOpacity="0.6" />
+        <path d="M800 422 812 436 800 450 788 436Z" fill="#c9f6ff" stroke="#3fe4ff" strokeWidth="1.5" />
+        {/* Gauntlets, stacked on the grip */}
+        <rect x="776" y="452" width="48" height="24" rx="8" fill="#111c44" stroke="#8a9ccc" strokeOpacity="0.7" strokeWidth="1.5" />
+        <rect x="776" y="478" width="48" height="24" rx="8" fill="#111c44" stroke="#8a9ccc" strokeOpacity="0.7" strokeWidth="1.5" />
+        {/* Rings of light around the blade, low over the lock */}
+        <ellipse cx="800" cy="760" rx="46" ry="9" fill="none" stroke="#8a6bff" strokeWidth="2" strokeOpacity="0.85" />
+        <ellipse cx="800" cy="806" rx="64" ry="12" fill="none" stroke="#e9fbff" strokeWidth="2" strokeOpacity="0.7" />
+        <ellipse cx="800" cy="842" rx="34" ry="7" fill="#3fe4ff" fillOpacity="0.5" />
       </g>
 
       {/* Resonance platform */}

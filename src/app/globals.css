@@ -178,18 +178,6 @@
    GATEWAY ART (static SVG) — only transforms/opacity, compositor-friendly
    ========================================================================== */
 
-.nexus-gateway-art .ga-ring {
-  transform-box: fill-box;
-  transform-origin: center;
-  animation: ga-precess 18s linear infinite;
-}
-.nexus-gateway-art .ga-ring-b {
-  animation-duration: 26s;
-  animation-direction: reverse;
-}
-.nexus-gateway-art .ga-ring-c {
-  animation-duration: 34s;
-}
 .nexus-gateway-art .ga-pulse {
   transform-box: fill-box;
   transform-origin: center;
@@ -200,17 +188,6 @@
   animation: ga-flicker 6s ease-in-out infinite;
 }
 
-@keyframes ga-precess {
-  0% {
-    transform: rotate(0deg) scaleY(1);
-  }
-  50% {
-    transform: rotate(180deg) scaleY(0.55);
-  }
-  100% {
-    transform: rotate(360deg) scaleY(1);
-  }
-}
 @keyframes ga-pulse {
   0%,
   100% {
