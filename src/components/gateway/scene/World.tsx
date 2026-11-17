@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { territories } from "@/config/territories";
 import { Ground as WorldGround } from "@/components/world/CityBlocks";
 import { Fabric } from "@/components/world/Fabric";
+import { HeritageArchive } from "@/components/world/heritage";
 import { Landmark } from "@/components/world/landmarks";
 import { DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Glow } from "./Glow";
@@ -237,6 +238,7 @@ export function City() {
           </group>
         );
       })}
+      <HeritageArchive level={() => sub(ch.city, 0.5, 0.95)} interactive={false} />
     </group>
   );
 }

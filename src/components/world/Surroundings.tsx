@@ -4,7 +4,7 @@ import { useFrame } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { territories } from "@/config/territories";
-import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "./layout";
+import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y, HERITAGE } from "./layout";
 import { inPlaza } from "./plan";
 
 /**
@@ -15,10 +15,16 @@ import { inPlaza } from "./plan";
 
 type Props = { level: () => number };
 
-/** A paved plaza in polished stone with a lit rim under every district landmark. */
+/** Every paved plaza: one per district landmark, and the Heritage Archive's. */
+const PLAZA_LIST = [
+  ...territories.map((t) => ({ id: t.id as string, x: DISTRICT_POS[t.id][0], z: DISTRICT_POS[t.id][1], r: DISTRICT_CLEARANCE[t.id], accent: t.accent })),
+  { id: "heritage", x: HERITAGE.x, z: HERITAGE.z, r: HERITAGE.r, accent: "#e8c46a" },
+];
+
+/** A paved plaza in polished stone with a lit rim under every landmark. */
 function Plazas({ level }: Props) {
   const rims = useMemo(
-    () => territories.map((t) => new THREE.MeshBasicMaterial({ color: t.accent, transparent: true, opacity: 0, toneMapped: false, depthWrite: false })),
+    () => PLAZA_LIST.map((p) => new THREE.MeshBasicMaterial({ color: p.accent, transparent: true, opacity: 0, toneMapped: false, depthWrite: false })),
     [],
   );
   const paving = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2b2e34", metalness: 0.15, roughness: 0.42 }), []);
@@ -28,11 +34,9 @@ function Plazas({ level }: Props) {
   });
   return (
     <>
-      {territories.map((t, i) => {
-        const [x, z] = DISTRICT_POS[t.id];
-        const r = DISTRICT_CLEARANCE[t.id];
+      {PLAZA_LIST.map(({ id, x, z, r }, i) => {
         return (
-          <group key={t.id} position={[x, GROUND_Y, z]}>
+          <group key={id} position={[x, GROUND_Y, z]}>
             <mesh material={kerb} position={[0, 0.1, 0]}>
               <cylinderGeometry args={[r + 0.4, r + 0.5, 0.2, 64]} />
             </mesh>

@@ -49,6 +49,13 @@ export const DISTRICT_CLEARANCE: Record<TerritoryId, number> = {
   sanctuary: 19,
 };
 
+/**
+ * The ACM Heritage Archive: a monument of its own on the intersection west
+ * of the Sentinel's avenue, between the Colosseum and the Central Core.
+ * `r` is its plaza; the building stays within about 10 units of the centre.
+ */
+export const HERITAGE = { x: -17, z: -96, r: 12 } as const;
+
 /** The chasm between the gateway threshold and the city (z range). */
 export const CHASM = { near: -14, far: -38 } as const;
 

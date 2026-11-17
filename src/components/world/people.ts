@@ -1,5 +1,5 @@
 import type { TerritoryId } from "@/config/territories";
-import { ARRIVAL, ARRIVAL_PLAZA, CHASM, CITY, DISTRICT_CLEARANCE, DISTRICT_POS, GRID, GROUND_Y } from "./layout";
+import { ARRIVAL, ARRIVAL_PLAZA, CHASM, CITY, DISTRICT_CLEARANCE, DISTRICT_POS, GRID, GROUND_Y, HERITAGE } from "./layout";
 import { cityPlan, type Block, type Rect } from "./plan";
 
 /**
@@ -48,6 +48,7 @@ export type Pose = { x: number; y: number; z: number; dist: number; moving: bool
 /** Ground height under a point: sidewalks and promenades are a kerb above the street. */
 export function surfaceY(x: number, z: number) {
   // District plazas are paved a step above the sidewalks.
+  if (Math.hypot(x - HERITAGE.x, z - HERITAGE.z) < HERITAGE.r + 0.45) return PLAZA_Y;
   for (const id of DISTRICTS) {
     const [cx, cz] = DISTRICT_POS[id];
     if (Math.hypot(x - cx, z - cz) < DISTRICT_CLEARANCE[id] + 0.45) return PLAZA_Y;
@@ -168,6 +169,8 @@ function rectNear(r: Rect, cx: number, cz: number, rad: number) {
 function blocked(r: Rect) {
   // The gateway platform itself (radius ~9.8); the plaza's sidewalks around it are busy.
   if (rectNear(r, ARRIVAL_PLAZA.x, ARRIVAL_PLAZA.z, GATEWAY_CLEAR)) return true;
+  // The Heritage Archive reaches about 10 units from its centre.
+  if (rectNear(r, HERITAGE.x, HERITAGE.z, 11.2)) return true;
   return DISTRICTS.some((id) => {
     const [x, z] = DISTRICT_POS[id];
     const l = LANDMARK[id];

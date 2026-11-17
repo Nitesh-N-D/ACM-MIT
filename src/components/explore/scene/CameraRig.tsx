@@ -135,8 +135,9 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
       [g.x, g.y, g.z] = dest.target;
       g.r = dest.radius;
       g.pol = dest.pol;
+      const az = s.travelAz ?? dest.az;
       // Take the shortest way round rather than unwinding earlier turns.
-      g.az = dest.az + TAU * Math.round((g.az - dest.az) / TAU);
+      g.az = az + TAU * Math.round((g.az - az) / TAU);
       limits.current = { min: dest.min, max: dest.max };
       d.tour = 0;
     }

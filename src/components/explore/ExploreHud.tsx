@@ -2,8 +2,10 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import type { HeritageEntry } from "@/config/heritage";
 import { getTerritory, territories } from "@/config/territories";
-import { DESTINATIONS, PLACE_IDS, destination, isTerritory, type FocusId } from "./destinations";
+import { DESTINATIONS, PLACE_IDS, destination, isHeritage, isTerritory, type FocusId } from "./destinations";
+import { HeritagePanel } from "./HeritagePanel";
 import { cameraInput, explore, useExplore, type ExploreMode } from "./store";
 
 const MODES: { id: ExploreMode; label: string; hint: string }[] = [
@@ -21,8 +23,11 @@ const iconBtn =
 
 type View = "3d" | "loading" | "map";
 
+/** On the 2D map only the districts and the Archive (its content works without 3D). */
+const MAP_PLACES = DESTINATIONS.filter((d) => d.id === "heritage" || !PLACE_IDS.includes(d.id as never));
+
 /** Everything the visitor can do in the world is also a real button here. */
-export function ExploreHud({ view, canUse3d }: { view: View; canUse3d: boolean }) {
+export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d: boolean; heritage: HeritageEntry[] }) {
   const mode = useExplore((s) => s.mode);
   const focus = useExplore((s) => s.focus);
   const autoRotate = useExplore((s) => s.autoRotate);
@@ -91,7 +96,7 @@ export function ExploreHud({ view, canUse3d }: { view: View; canUse3d: boolean }
       )}
 
       {/* Instructions */}
-      {is3d && help && !territory && (
+      {is3d && help && !territory && !isHeritage(focus) && (
         <div className="absolute top-14 left-3 z-20 max-w-[17rem] border border-line bg-void/85 p-3 backdrop-blur-sm sm:top-16 sm:left-4">
           <p className="font-mono text-[0.62rem] tracking-[0.2em] text-cyan uppercase">Navigating NEXUS</p>
           <ul className="mt-2 space-y-1 text-xs leading-relaxed text-silver">
@@ -136,12 +141,14 @@ export function ExploreHud({ view, canUse3d }: { view: View; canUse3d: boolean }
         </aside>
       )}
 
+      {isHeritage(focus) && <HeritagePanel entries={heritage} inside={is3d && focus === "archive"} can3d={is3d} />}
+
       {/* Destinations */}
       <nav aria-label="World destinations" className="absolute inset-x-0 bottom-0 z-20 border-t border-line bg-void/85 backdrop-blur-sm">
         <ul className="flex gap-1.5 overflow-x-auto px-3 py-2.5 sm:px-4">
-          {(is3d ? DESTINATIONS : DESTINATIONS.filter((d) => !PLACE_IDS.includes(d.id as never))).map((d) => {
+          {(is3d ? DESTINATIONS : MAP_PLACES).map((d) => {
             const on = focus === d.id;
-            const accent = isTerritory(d.id) ? territories.find((t) => t.id === d.id)?.accent : undefined;
+            const accent = isTerritory(d.id) ? territories.find((t) => t.id === d.id)?.accent : d.id === "heritage" ? "#e8c46a" : undefined;
             return (
               <li key={d.id} className="shrink-0">
                 <button type="button" title={d.hint} aria-pressed={on} data-destination={d.id} onClick={() => explore.go(d.id as FocusId)} className={`${chip} ${on ? chipOn : chipOff}`}>

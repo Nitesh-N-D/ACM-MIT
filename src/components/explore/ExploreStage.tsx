@@ -2,10 +2,11 @@
 
 import dynamic from "next/dynamic";
 import { Component, useEffect, type ReactNode } from "react";
+import type { HeritageEntry } from "@/config/heritage";
 import type { TerritoryId } from "@/config/territories";
 import { CityMap } from "./CityMap";
 import { ExploreHud } from "./ExploreHud";
-import { isTerritory } from "./destinations";
+import { DESTINATIONS, isHeritage, isTerritory, type FocusId } from "./destinations";
 import type { Activity } from "./scene/ExploreScene";
 import { explore, useExplore } from "./store";
 
@@ -34,12 +35,13 @@ class CanvasBoundary extends Component<{ children: ReactNode }, { failed: boolea
 }
 
 const NO_ACTIVITY: Activity = {};
+const NO_HERITAGE: HeritageEntry[] = [];
 
 /**
  * The navigable NEXUS world. The 2D map is the baseline (and what renders
  * on the server); the WebGL world replaces it when the device can run it.
  */
-export function ExploreStage({ activity = NO_ACTIVITY }: { activity?: Activity }) {
+export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE }: { activity?: Activity; heritage?: HeritageEntry[] }) {
   const tier = useExplore((s) => s.tier);
   const ready = useExplore((s) => s.ready);
   const flat = useExplore((s) => s.flat);
@@ -48,6 +50,9 @@ export function ExploreStage({ activity = NO_ACTIVITY }: { activity?: Activity }
 
   useEffect(() => {
     explore.boot();
+    // Deep link: /explore?to=<destination> opens there (e.g. ?to=heritage).
+    const to = new URLSearchParams(window.location.search).get("to");
+    if (to && DESTINATIONS.some((d) => d.id === to)) explore.go(to as FocusId);
     return () => explore.dispose();
   }, []);
 
@@ -73,17 +78,17 @@ export function ExploreStage({ activity = NO_ACTIVITY }: { activity?: Activity }
     >
       {view !== "3d" && (
         <div className="absolute inset-0 flex items-center justify-center p-4 pt-16 pb-28 sm:p-10 sm:pt-20 lg:pr-[24rem]">
-          <CityMap selected={selected} onSelect={(id) => explore.go(id)} className="max-h-full w-full max-w-4xl" />
+          <CityMap selected={selected} onSelect={(id) => explore.go(id)} heritageOn={isHeritage(focus)} onHeritage={() => explore.go("heritage")} className="max-h-full w-full max-w-4xl" />
         </div>
       )}
       {show3d && (
         <div className="absolute inset-0 transition-opacity duration-1000" style={{ opacity: ready ? 1 : 0 }}>
           <CanvasBoundary key={tier}>
-            <ExploreCanvas tier={tier} activity={activity} reducedMotion={reducedMotion} onReady={explore.ready} onFail={explore.fail} />
+            <ExploreCanvas tier={tier} activity={activity} heritage={heritage} reducedMotion={reducedMotion} onReady={explore.ready} onFail={explore.fail} />
           </CanvasBoundary>
         </div>
       )}
-      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} />
+      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} heritage={heritage} />
     </section>
   );
 }

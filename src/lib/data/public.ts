@@ -1,5 +1,6 @@
 import "server-only";
 import { cache } from "react";
+import { HERITAGE_REFERENCE, type HeritageEntry } from "@/config/heritage";
 import { createClient } from "@/lib/supabase/server";
 import { sampleAnnouncements, sampleEvents, sampleLearning, sampleProjects } from "./sample";
 import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, Loaded, MediaRow, ProjectRow, SettingsMap, TeamRow } from "./types";
@@ -106,3 +107,49 @@ export async function searchAll(query: string): Promise<{ source: Loaded<unknown
   ];
   return { source, hits: hits.slice(0, 60) };
 }
+
+export type HeritageLoaded = {
+  /** "reference": no backend (or it failed), showing the verified milestones shipped with the site. */
+  source: "live" | "reference";
+  items: HeritageEntry[];
+};
+
+/**
+ * ACM Heritage Archive. Live rows when the database answers; otherwise the
+ * verified reference milestones for ACM and ACM India (never chapter content).
+ */
+export const listHeritage = cache(async (): Promise<HeritageLoaded> => {
+  const reference: HeritageLoaded = { source: "reference", items: HERITAGE_REFERENCE };
+  const db = await createClient();
+  if (!db) return reference;
+  try {
+    const { data, error } = await db
+      .from("heritage_entries")
+      .select("slug, gallery, year, date_label, title, summary, body, source_url, source_label, image_path, image_alt, image_rights_confirmed, link_url, link_label, sort_order")
+      .eq("status", "published")
+      .order("year", { ascending: true, nullsFirst: false })
+      .order("sort_order")
+      .limit(500);
+    if (error || !data) return reference;
+    const items: HeritageEntry[] = data.map((r) => ({
+      id: r.slug as string,
+      gallery: r.gallery as HeritageEntry["gallery"],
+      year: (r.year as number | null) ?? null,
+      date_label: (r.date_label as string) ?? "",
+      title: r.title as string,
+      summary: r.summary as string,
+      body: (r.body as string) ?? "",
+      source_url: r.source_url as string,
+      source_label: (r.source_label as string) ?? "",
+      // Only photographs with confirmed rights are ever shown.
+      image_path: r.image_rights_confirmed ? ((r.image_path as string | null) ?? null) : null,
+      image_alt: (r.image_alt as string) ?? "",
+      link_url: (r.link_url as string | null) ?? null,
+      link_label: (r.link_label as string) ?? "",
+      sort_order: (r.sort_order as number) ?? 0,
+    }));
+    return { source: "live", items };
+  } catch {
+    return reference;
+  }
+});

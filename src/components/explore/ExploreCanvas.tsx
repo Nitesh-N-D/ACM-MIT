@@ -6,6 +6,7 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { TIERS, type Tier } from "@/lib/gateway/quality";
 import { FINAL, SceneCtx } from "@/components/gateway/scene/state";
+import type { HeritageEntry } from "@/config/heritage";
 import { ExploreScene, type Activity } from "./scene/ExploreScene";
 
 /** Drives the "demand" frameloop at a fixed rate on the low tier. */
@@ -21,12 +22,13 @@ function FrameCap({ fps }: { fps: number }) {
 type Props = {
   tier: Exclude<Tier, "fallback">;
   activity: Activity;
+  heritage: HeritageEntry[];
   reducedMotion: boolean;
   onReady: () => void;
   onFail: () => void;
 };
 
-export default function ExploreCanvas({ tier, activity, reducedMotion, onReady, onFail }: Props) {
+export default function ExploreCanvas({ tier, activity, heritage, reducedMotion, onReady, onFail }: Props) {
   const settings = TIERS[tier];
   const wrap = useRef<HTMLDivElement>(null);
   const [visible, setVisible] = useState(true);
@@ -89,7 +91,7 @@ export default function ExploreCanvas({ tier, activity, reducedMotion, onReady, 
             onFallback={() => setDpr(1)}
           />
           {capped && visible && <FrameCap fps={settings.ambientFps} />}
-          <ExploreScene activity={activity} reducedMotion={reducedMotion} />
+          <ExploreScene activity={activity} heritage={heritage} reducedMotion={reducedMotion} />
         </SceneCtx.Provider>
       </Canvas>
     </div>

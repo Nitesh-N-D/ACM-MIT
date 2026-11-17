@@ -70,6 +70,7 @@ export const footerNav: { heading: string; items: NavItem[] }[] = [
   {
     heading: "Chapter",
     items: [
+      { label: "Heritage Archive", href: "/heritage" },
       { label: "Announcements", href: "/announcements" },
       { label: "Gallery", href: "/gallery" },
       { label: "Achievements", href: "/achievements" },

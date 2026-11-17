@@ -1,5 +1,5 @@
 import type { TerritoryId } from "@/config/territories";
-import { ARRIVAL, ARRIVAL_PLAZA, CHASM, CITY, DISTRICT_CLEARANCE, DISTRICT_POS, GRID } from "./layout";
+import { ARRIVAL, ARRIVAL_PLAZA, CHASM, CITY, DISTRICT_CLEARANCE, DISTRICT_POS, GRID, HERITAGE } from "./layout";
 
 /**
  * The city plan: a deterministic description of every block, building,
@@ -155,6 +155,7 @@ function inDisc(r: Rect, cx: number, cz: number, rad: number) {
 /** True where a plaza keeps the ground free of ordinary buildings and furniture. */
 export function inPlaza(x: number, z: number, margin = 0) {
   if (Math.hypot(x - ARRIVAL_PLAZA.x, z - ARRIVAL_PLAZA.z) < ARRIVAL_PLAZA.r + margin) return true;
+  if (Math.hypot(x - HERITAGE.x, z - HERITAGE.z) < HERITAGE.r + margin) return true;
   for (const id of DISTRICTS) {
     const [dx, dz] = DISTRICT_POS[id];
     if (Math.hypot(x - dx, z - dz) < DISTRICT_CLEARANCE[id] + margin) return true;
@@ -164,6 +165,7 @@ export function inPlaza(x: number, z: number, margin = 0) {
 
 function rectInPlaza(r: Rect, margin: number) {
   if (inDisc(r, ARRIVAL_PLAZA.x, ARRIVAL_PLAZA.z, ARRIVAL_PLAZA.r + margin)) return true;
+  if (inDisc(r, HERITAGE.x, HERITAGE.z, HERITAGE.r + margin)) return true;
   return DISTRICTS.some((id) => inDisc(r, DISTRICT_POS[id][0], DISTRICT_POS[id][1], DISTRICT_CLEARANCE[id] + margin));
 }
 

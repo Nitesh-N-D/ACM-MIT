@@ -4,6 +4,7 @@ import { Environment, Html, Lightformer } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
+import type { HeritageEntry } from "@/config/heritage";
 import { territories, type TerritoryId } from "@/config/territories";
 import { SwordKey } from "@/components/gateway/scene/SwordKey";
 import { Gate } from "@/components/gateway/scene/Gate";
@@ -14,6 +15,7 @@ import { COLORS, useScene } from "@/components/gateway/scene/state";
 import { Bridge } from "@/components/gateway/scene/World";
 import { Ground } from "@/components/world/CityBlocks";
 import { Fabric } from "@/components/world/Fabric";
+import { HeritageArchive } from "@/components/world/heritage";
 import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Pedestrians } from "@/components/world/Pedestrians";
@@ -159,7 +161,7 @@ function Lights() {
 }
 
 /** The whole NEXUS world, viewable from any direction. */
-export function ExploreScene({ activity, reducedMotion }: { activity: Activity; reducedMotion: boolean }) {
+export function ExploreScene({ activity, heritage, reducedMotion }: { activity: Activity; heritage: HeritageEntry[]; reducedMotion: boolean }) {
   const { tier } = useScene();
   const { focus, arrive } = useFocus();
   return (
@@ -182,6 +184,7 @@ export function ExploreScene({ activity, reducedMotion }: { activity: Activity; 
       {territories.map((t, i) => (
         <District key={t.id} id={t.id} index={i} focus={focus} arrive={arrive} activity={activity[t.id] ?? 0} />
       ))}
+      <HeritageArchive entries={heritage} level={() => arrive.current} />
       <CameraRig reducedMotion={reducedMotion} />
     </>
   );

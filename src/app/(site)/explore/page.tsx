@@ -4,14 +4,19 @@ import { TerritoryList } from "@/components/explore/TerritoryList";
 import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { pages } from "@/config/pages";
+import { listHeritage } from "@/lib/data/public";
+
+/** Re-read published heritage entries at most every five minutes. */
+export const revalidate = 300;
 
 export const metadata: Metadata = { title: pages.explore.title, description: pages.explore.description };
 
-export default function Page() {
+export default async function Page() {
+  const { items: heritage } = await listHeritage();
   return (
     <>
       <h1 className="sr-only">{pages.explore.title}</h1>
-      <ExploreStage />
+      <ExploreStage heritage={heritage} />
       <Container className="py-14">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>

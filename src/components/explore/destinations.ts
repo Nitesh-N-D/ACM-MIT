@@ -1,5 +1,5 @@
 import { territories, type TerritoryId } from "@/config/territories";
-import { DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
+import { DISTRICT_POS, GROUND_Y, HERITAGE } from "@/components/world/layout";
 
 /**
  * Camera destinations of the NEXUS world. Each is an orbit: the camera looks
@@ -7,7 +7,7 @@ import { DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
  * looking toward the city) and polar angle `pol` (0 = straight down).
  */
 
-export type PlaceId = "overview" | "sentinel" | "sword" | "gateway" | "arrival" | "bridge";
+export type PlaceId = "overview" | "sentinel" | "sword" | "gateway" | "arrival" | "bridge" | "heritage" | "archive";
 export type FocusId = PlaceId | TerritoryId;
 
 export type Destination = {
@@ -23,6 +23,10 @@ export type Destination = {
   max: number;
 };
 
+/** Hall centre (local z) and eye height of the Archive interior, mirrored from world/heritage. */
+const ARCHIVE_CENTRE_Z = -1;
+const ARCHIVE_EYE = 3.1;
+
 /** Landmark heights, mirrored from world/landmarks (kept free of three.js). */
 const HEIGHT: Record<TerritoryId, number> = { core: 54, intelligence: 22, frontier: 30, colosseum: 12, vault: 17, sanctuary: 27 };
 
@@ -33,7 +37,34 @@ const PLACES: Destination[] = [
   { id: "gateway", label: "The Gateway", hint: "Threshold of NEXUS", target: [0, 8, -9.5], radius: 46, az: 0.5, pol: 1.28, min: 16, max: 120 },
   { id: "arrival", label: "Arrival Quarter", hint: "The city behind the gateway", target: [0, 6, 6], radius: 44, az: 3.5, pol: 1.3, min: 14, max: 120 },
   { id: "bridge", label: "NEXUS Bridge", hint: "The span across the chasm", target: [0, 2, -32], radius: 66, az: 1.05, pol: 1.16, min: 14, max: 140 },
+  {
+    id: "heritage",
+    label: "Heritage Archive",
+    hint: "The history of ACM, ACM India and the chapter",
+    target: [HERITAGE.x, GROUND_Y + 6, HERITAGE.z],
+    radius: 38,
+    az: 0.38,
+    pol: 1.17,
+    min: 13,
+    max: 150,
+  },
+  {
+    // Inside the hall: the orbit centre is the monument, the camera stays
+    // within the walls. Azimuth picks the gallery wall that is in view.
+    id: "archive",
+    label: "Inside the Archive",
+    hint: "Walk the three galleries",
+    target: [HERITAGE.x, GROUND_Y + ARCHIVE_EYE, HERITAGE.z + ARCHIVE_CENTRE_Z],
+    radius: 3.8,
+    az: 0,
+    pol: 1.47,
+    min: 1.4,
+    max: 4.4,
+  },
 ];
+
+/** Camera azimuth that faces each gallery wall from inside the Archive. */
+export const GALLERY_AZ = { global: Math.PI / 2, india: 0, chapter: -Math.PI / 2 } as const;
 
 const DISTRICTS: Destination[] = territories.map((t) => {
   const [x, z] = DISTRICT_POS[t.id];
@@ -55,12 +86,17 @@ const DISTRICTS: Destination[] = territories.map((t) => {
 export const DESTINATIONS: Destination[] = [...PLACES, ...DISTRICTS];
 export const PLACE_IDS = PLACES.map((p) => p.id) as PlaceId[];
 /** Order of the automatic cinematic tour. */
-export const TOUR: FocusId[] = ["overview", "sentinel", "sword", "gateway", "arrival", "bridge", ...territories.map((t) => t.id)];
+export const TOUR: FocusId[] = ["overview", "sentinel", "sword", "gateway", "arrival", "bridge", ...territories.map((t) => t.id), "heritage", "archive"];
 
 const BY_ID = new Map(DESTINATIONS.map((d) => [d.id, d]));
 
 export function destination(id: FocusId): Destination {
   return BY_ID.get(id) ?? PLACES[0]!;
+}
+
+/** The Heritage Archive, outside or in. */
+export function isHeritage(id: FocusId): id is "heritage" | "archive" {
+  return id === "heritage" || id === "archive";
 }
 
 export function isTerritory(id: FocusId): id is TerritoryId {
