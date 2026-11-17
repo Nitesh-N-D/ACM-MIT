@@ -13,7 +13,8 @@ export type TierSettings = {
   antialias: boolean;
   stars: number;
   motes: number;
-  towers: number;
+  /** City fabric detail: 0 bare volumes, 1 cornices and roof plant, 2 full. */
+  detail: 0 | 1 | 2;
   /** Procedural environment map for metallic reflections. */
   environment: boolean;
   /** Ambient frame-rate cap after the intro (0 = uncapped). */
@@ -21,9 +22,9 @@ export type TierSettings = {
 };
 
 export const TIERS: Record<Exclude<Tier, "fallback">, TierSettings> = {
-  high: { dpr: [1, 2], antialias: true, stars: 5000, motes: 520, towers: 240, environment: true, ambientFps: 0 },
-  balanced: { dpr: [1, 1.5], antialias: true, stars: 3000, motes: 300, towers: 160, environment: true, ambientFps: 0 },
-  low: { dpr: [1, 1], antialias: false, stars: 1400, motes: 110, towers: 80, environment: false, ambientFps: 30 },
+  high: { dpr: [1, 2], antialias: true, stars: 5000, motes: 520, detail: 2, environment: true, ambientFps: 0 },
+  balanced: { dpr: [1, 1.5], antialias: true, stars: 3000, motes: 300, detail: 2, environment: true, ambientFps: 0 },
+  low: { dpr: [1, 1], antialias: false, stars: 1400, motes: 110, detail: 1, environment: false, ambientFps: 30 },
 };
 
 export const TIER_LABEL: Record<Tier, string> = {

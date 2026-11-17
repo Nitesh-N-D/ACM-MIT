@@ -1,140 +1,30 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useLayoutEffect, useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { territories } from "@/config/territories";
-import { rng, windowsTexture } from "@/components/gateway/scene/textures";
-import { CHASM, DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "./layout";
+import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "./layout";
+import { inPlaza } from "./plan";
 
 /**
- * Everything that makes NEXUS a place you stand inside rather than a set
- * you look at: the arrival quarter behind and beside the gateway platform,
- * a skyline on every horizon, district plazas, and elevated routes.
- * Used by the free-exploration world only; the gateway intro never looks
- * this way, so it does not pay for it.
+ * Public infrastructure of the free-exploration world: paved district
+ * plazas with a lit rim, and the elevated transit loop with its stations
+ * and a running train. The buildings themselves are in Fabric.tsx.
  */
 
-const CITY_CENTRE: [number, number] = [0, -50];
-const PLATFORM_CLEAR = 26;
+type Props = { level: () => number };
 
-type Props = { density: number; level: () => number };
-
-/** Towers on the arrival side of the chasm, on stepped terraces. */
-function ArrivalQuarter({ density, level }: Props) {
-  const towers = useRef<THREE.InstancedMesh>(null);
-  const terraces = useRef<THREE.InstancedMesh>(null);
-  const count = Math.round(110 * density);
-
-  const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#0b1534", emissive: "#ffffff", emissiveMap: windowsTexture(), emissiveIntensity: 0, metalness: 0.55, roughness: 0.5 }),
-    [],
-  );
-  const terraceMat = useMemo(() => new THREE.MeshStandardMaterial({ color: "#0c1638", metalness: 0.7, roughness: 0.45 }), []);
-
-  useLayoutEffect(() => {
-    const m = towers.current;
-    const t = terraces.current;
-    if (!m || !t) return;
-    const r = rng(409);
-    const o = new THREE.Object3D();
-    let i = 0;
-    let j = 0;
-    let guard = 0;
-    while (i < count && guard++ < count * 40) {
-      const x = (r() * 2 - 1) * 120;
-      const z = CHASM.near + 6 + r() * 120;
-      const d = Math.hypot(x, z + 1);
-      if (d < PLATFORM_CLEAR) continue;
-      // Keep the approach to the gate and the view down the bridge open.
-      if (Math.abs(x) < 20 && z < 4) continue;
-      // A processional avenue leads away behind the Sentinel.
-      if (Math.abs(x) < 7) continue;
-      const far = Math.min(1, (d - PLATFORM_CLEAR) / 90);
-      const w = 3 + r() * 5;
-      const dp = 3 + r() * 5;
-      const h = 4 + Math.pow(r(), 1.8) * (10 + far * 46);
-      // Stepped ground: blocks further out stand on higher terraces.
-      const step = Math.floor(far * 3) * 1.6;
-      if (step > 0 && j < count) {
-        o.position.set(x, GROUND_Y, z);
-        o.scale.set(w + 4, step, dp + 4);
-        o.rotation.y = 0;
-        o.updateMatrix();
-        t.setMatrixAt(j++, o.matrix);
-      }
-      o.position.set(x, GROUND_Y + step, z);
-      o.scale.set(w, h, dp);
-      o.rotation.y = r() < 0.18 ? Math.PI / 4 : 0;
-      o.updateMatrix();
-      m.setMatrixAt(i++, o.matrix);
-    }
-    m.count = i;
-    t.count = j;
-    m.instanceMatrix.needsUpdate = true;
-    t.instanceMatrix.needsUpdate = true;
-    m.computeBoundingSphere();
-    t.computeBoundingSphere();
-  }, [count]);
-
-  useFrame(({ clock }) => {
-    material.emissiveIntensity = level() * (1.05 + 0.08 * Math.sin(clock.elapsedTime * 0.6 + 2));
-  });
-
-  return (
-    <>
-      <instancedMesh ref={towers} args={[box, material, count]} />
-      <instancedMesh ref={terraces} args={[box, terraceMat, count]} />
-    </>
-  );
-}
-
-/** A ring of very tall, hazy megastructures on every horizon. */
-function Skyline({ density, level }: Props) {
-  const ref = useRef<THREE.InstancedMesh>(null);
-  const count = Math.round(90 * density);
-  const box = useMemo(() => new THREE.BoxGeometry(1, 1, 1).translate(0, 0.5, 0), []);
-  const material = useMemo(
-    () => new THREE.MeshStandardMaterial({ color: "#070e26", emissive: "#9fc4ff", emissiveMap: windowsTexture(), emissiveIntensity: 0, metalness: 0.4, roughness: 0.7 }),
-    [],
-  );
-
-  useLayoutEffect(() => {
-    const m = ref.current;
-    if (!m) return;
-    const r = rng(733);
-    const o = new THREE.Object3D();
-    for (let i = 0; i < count; i++) {
-      const a = (i / count) * Math.PI * 2 + (r() - 0.5) * 0.06;
-      const rad = 200 + r() * 90;
-      const w = 10 + r() * 16;
-      o.position.set(CITY_CENTRE[0] + Math.sin(a) * rad, GROUND_Y, CITY_CENTRE[1] + Math.cos(a) * rad);
-      o.scale.set(w, 40 + Math.pow(r(), 1.5) * 120, w * (0.6 + r() * 0.6));
-      o.rotation.y = a;
-      o.updateMatrix();
-      m.setMatrixAt(i, o.matrix);
-    }
-    m.instanceMatrix.needsUpdate = true;
-    m.computeBoundingSphere();
-  }, [count]);
-
-  useFrame(() => {
-    material.emissiveIntensity = level() * 0.55;
-  });
-
-  return <instancedMesh ref={ref} args={[box, material, count]} />;
-}
-
-/** A paved plaza with a lit rim under every district landmark. */
-function Plazas({ level }: { level: () => number }) {
+/** A paved plaza in polished stone with a lit rim under every district landmark. */
+function Plazas({ level }: Props) {
   const rims = useMemo(
     () => territories.map((t) => new THREE.MeshBasicMaterial({ color: t.accent, transparent: true, opacity: 0, toneMapped: false, depthWrite: false })),
     [],
   );
-  const paving = useMemo(() => new THREE.MeshStandardMaterial({ color: "#0d1838", metalness: 0.75, roughness: 0.38 }), []);
+  const paving = useMemo(() => new THREE.MeshStandardMaterial({ color: "#2b2e34", metalness: 0.15, roughness: 0.42 }), []);
+  const kerb = useMemo(() => new THREE.MeshStandardMaterial({ color: "#4a4d52", metalness: 0.1, roughness: 0.7 }), []);
   useFrame(() => {
-    for (const m of rims) m.opacity = 0.75 * level();
+    for (const m of rims) m.opacity = 0.55 * level();
   });
   return (
     <>
@@ -143,11 +33,14 @@ function Plazas({ level }: { level: () => number }) {
         const r = DISTRICT_CLEARANCE[t.id];
         return (
           <group key={t.id} position={[x, GROUND_Y, z]}>
-            <mesh material={paving} position={[0, 0.12, 0]}>
-              <cylinderGeometry args={[r, r + 0.8, 0.24, 48]} />
+            <mesh material={kerb} position={[0, 0.1, 0]}>
+              <cylinderGeometry args={[r + 0.4, r + 0.5, 0.2, 64]} />
             </mesh>
-            <mesh material={rims[i]} position={[0, 0.26, 0]} rotation={[-Math.PI / 2, 0, 0]}>
-              <ringGeometry args={[r - 0.35, r - 0.1, 64]} />
+            <mesh material={paving} position={[0, 0.2, 0]}>
+              <cylinderGeometry args={[r, r, 0.06, 64]} />
+            </mesh>
+            <mesh material={rims[i]} position={[0, 0.235, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+              <ringGeometry args={[r - 0.3, r - 0.18, 96]} />
             </mesh>
           </group>
         );
@@ -156,89 +49,192 @@ function Plazas({ level }: { level: () => number }) {
   );
 }
 
-/** Raised ring road around the Core with spokes to the outer districts. */
-function ElevatedRoutes({ level }: { level: () => number }) {
-  const HEIGHT = 9;
-  const RING = DISTRICT_CLEARANCE.core + 14;
-  const core = DISTRICT_POS.core;
-  const deck = useMemo(() => new THREE.MeshStandardMaterial({ color: "#101c44", metalness: 0.85, roughness: 0.32, side: THREE.DoubleSide }), []);
-  const pillar = useMemo(() => new THREE.MeshStandardMaterial({ color: "#0c1533", metalness: 0.8, roughness: 0.4 }), []);
-  const light = useMemo(() => new THREE.MeshBasicMaterial({ color: "#3fe4ff", transparent: true, opacity: 0, toneMapped: false }), []);
+/* ------------------------------------------------------------------------- */
+/* Elevated transit                                                           */
+/* ------------------------------------------------------------------------- */
 
-  const spokes = useMemo(
-    () =>
-      territories
-        .filter((t) => t.id !== "core")
-        .map((t) => {
-          const [x, z] = DISTRICT_POS[t.id];
-          const dx = x - core[0];
-          const dz = z - core[1];
-          const dist = Math.hypot(dx, dz);
-          const from = RING + 1.6;
-          const to = dist - DISTRICT_CLEARANCE[t.id] - 1;
-          const len = Math.max(0, to - from);
-          const mid = (from + to) / 2;
-          return { id: t.id, len, rot: Math.atan2(dx, dz), pos: [core[0] + (dx / dist) * mid, core[1] + (dz / dist) * mid] as [number, number], ux: dx / dist, uz: dz / dist, from, to };
-        })
-        .filter((s) => s.len > 4),
-    [core, RING],
-  );
-  const pillars = useMemo(() => {
-    const list: [number, number][] = [];
-    for (let i = 0; i < 12; i++) {
-      const a = (i / 12) * Math.PI * 2;
-      list.push([core[0] + Math.sin(a) * RING, core[1] + Math.cos(a) * RING]);
+const DECK_Y = 9;
+/** The loop runs above street centre lines, clear of every landmark. */
+const LOOP: [number, number][] = [
+  [-68, -44],
+  [68, -44],
+  [68, -135],
+  [-68, -135],
+];
+const STATIONS: [number, number][] = [
+  [-25.5, -44],
+  [25.5, -44],
+  [68, -89.5],
+  [-68, -89.5],
+  [0, -135],
+];
+
+type Seg = { a: [number, number]; b: [number, number]; len: number; from: number };
+
+function segments(): { segs: Seg[]; total: number } {
+  const segs: Seg[] = [];
+  let total = 0;
+  for (let i = 0; i < LOOP.length; i++) {
+    const a = LOOP[i]!;
+    const b = LOOP[(i + 1) % LOOP.length]!;
+    const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+    segs.push({ a, b, len, from: total });
+    total += len;
+  }
+  return { segs, total };
+}
+
+/** Position and heading at distance s along the loop. */
+function along(segs: Seg[], total: number, s: number): [number, number, number] {
+  const d = ((s % total) + total) % total;
+  const seg = segs.find((g) => d >= g.from && d < g.from + g.len) ?? segs[0]!;
+  const t = (d - seg.from) / seg.len;
+  const x = seg.a[0] + (seg.b[0] - seg.a[0]) * t;
+  const z = seg.a[1] + (seg.b[1] - seg.a[1]) * t;
+  return [x, z, Math.atan2(seg.b[0] - seg.a[0], seg.b[1] - seg.a[1])];
+}
+
+const CARS = 4;
+const CAR_LEN = 3.1;
+
+function Transit({ level, reducedMotion }: Props & { reducedMotion: boolean }) {
+  const train = useRef<THREE.Group>(null);
+  const built = useMemo(() => {
+    const { segs, total } = segments();
+    const concrete = new THREE.MeshStandardMaterial({ color: "#5b5e63", roughness: 0.78, metalness: 0.05 });
+    const steel = new THREE.MeshStandardMaterial({ color: "#363b43", roughness: 0.4, metalness: 0.85 });
+    const glass = new THREE.MeshStandardMaterial({ color: "#1d2a36", roughness: 0.08, metalness: 0.9, transparent: true, opacity: 0.55 });
+    const body = new THREE.MeshStandardMaterial({ color: "#c9ccd1", roughness: 0.3, metalness: 0.7 });
+    const strip = new THREE.MeshBasicMaterial({ color: "#58e6ff", toneMapped: false });
+    const windows = new THREE.MeshStandardMaterial({ color: "#0b1118", emissive: "#ffe8c0", emissiveIntensity: 0, roughness: 0.1, metalness: 0.6 });
+    const group = new THREE.Group();
+
+    const box = (w: number, h: number, d: number, m: THREE.Material, x: number, y: number, z: number, ry = 0) => {
+      const mesh = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), m);
+      mesh.position.set(x, y, z);
+      mesh.rotation.y = ry;
+      group.add(mesh);
+      return mesh;
+    };
+
+    // Guideway: a box-girder deck with parapets, and piers between junctions.
+    const piers: [number, number][] = [];
+    for (const s of segs) {
+      const mx = (s.a[0] + s.b[0]) / 2;
+      const mz = (s.a[1] + s.b[1]) / 2;
+      const ry = Math.atan2(s.b[0] - s.a[0], s.b[1] - s.a[1]);
+      box(2.4, 0.55, s.len + 2.4, concrete, mx, GROUND_Y + DECK_Y - 0.28, mz, ry);
+      for (const side of [-1, 1]) {
+        const ox = Math.cos(ry) * 1.15 * side;
+        const oz = -Math.sin(ry) * 1.15 * side;
+        box(0.1, 0.32, s.len + 2.4, steel, mx + ox, GROUND_Y + DECK_Y + 0.16, mz + oz, ry);
+      }
+      for (let d = 4.25; d < s.len; d += 8.5) {
+        const t = d / s.len;
+        const x = s.a[0] + (s.b[0] - s.a[0]) * t;
+        const z = s.a[1] + (s.b[1] - s.a[1]) * t;
+        if (!inPlaza(x, z, 1)) piers.push([x, z]);
+      }
     }
-    for (const s of spokes) for (let d = s.from + 6; d < s.to - 2; d += 9) list.push([core[0] + s.ux * d, core[1] + s.uz * d]);
-    return list;
-  }, [core, RING, spokes]);
+    for (const c of LOOP) piers.push(c);
+    const pierGeo = new THREE.CylinderGeometry(0.34, 0.46, DECK_Y - 0.55, 10).translate(0, (DECK_Y - 0.55) / 2, 0);
+    const capGeo = new THREE.BoxGeometry(2.2, 0.4, 0.9);
+    const pierMesh = new THREE.InstancedMesh(pierGeo, concrete, piers.length);
+    const capMesh = new THREE.InstancedMesh(capGeo, concrete, piers.length);
+    const o = new THREE.Object3D();
+    piers.forEach(([x, z], i) => {
+      o.position.set(x, GROUND_Y, z);
+      o.rotation.set(0, 0, 0);
+      o.updateMatrix();
+      pierMesh.setMatrixAt(i, o.matrix);
+      const ns = segs.some((s) => s.a[0] === s.b[0] && Math.abs(s.a[0] - x) < 0.01);
+      o.position.set(x, GROUND_Y + DECK_Y - 0.75, z);
+      o.rotation.y = ns ? 0 : Math.PI / 2;
+      o.updateMatrix();
+      capMesh.setMatrixAt(i, o.matrix);
+    });
+    group.add(pierMesh, capMesh);
 
-  useFrame(({ clock }) => {
-    light.opacity = level() * (0.7 + 0.15 * Math.sin(clock.elapsedTime * 1.2));
+    // Stations: platform, glazed canopy on columns, and a stair tower to the street.
+    for (const [x, z] of STATIONS) {
+      const ns = Math.abs(Math.abs(x) - 68) < 0.1;
+      const ry = ns ? 0 : Math.PI / 2;
+      const len = 9;
+      const sx = (dx: number, dz: number): [number, number] => (ns ? [x + dx, z + dz] : [x + dz, z + dx]);
+      for (const side of [-1, 1]) {
+        const [px, pz] = sx(side * 1.9, 0);
+        box(1.4, 0.3, len, concrete, px, GROUND_Y + DECK_Y - 0.15, pz, ry);
+        for (const f of [-0.42, 0, 0.42]) {
+          const [cx, cz] = sx(side * 2.45, f * len);
+          box(0.12, 2.4, 0.12, steel, cx, GROUND_Y + DECK_Y + 1.2, cz, ry);
+        }
+      }
+      const [rx, rz] = sx(0, 0);
+      box(5.4, 0.12, len + 0.6, glass, rx, GROUND_Y + DECK_Y + 2.45, rz, ry);
+      box(5.6, 0.18, len + 0.8, steel, rx, GROUND_Y + DECK_Y + 2.55, rz, ry).scale.set(1, 1, 1);
+      const [tx, tz] = sx(3.2, len * 0.38);
+      box(1.6, DECK_Y + 2.4, 1.6, glass, tx, GROUND_Y + (DECK_Y + 2.4) / 2, tz, ry);
+      box(1.7, 0.2, 1.7, steel, tx, GROUND_Y + DECK_Y + 2.5, tz, ry);
+    }
+
+    // The train: four articulated cars.
+    const cars: THREE.Group[] = [];
+    for (let i = 0; i < CARS; i++) {
+      const car = new THREE.Group();
+      const shell = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.15, CAR_LEN - 0.12), body);
+      shell.position.y = 0.72;
+      const glazing = new THREE.Mesh(new THREE.BoxGeometry(1.52, 0.42, CAR_LEN - 0.5), windows);
+      glazing.position.y = 0.86;
+      const line = new THREE.Mesh(new THREE.BoxGeometry(1.53, 0.05, CAR_LEN - 0.3), strip);
+      line.position.y = 0.42;
+      car.add(shell, glazing, line);
+      cars.push(car);
+    }
+    return { group, segs, total, cars, windows, strip, materials: [concrete, steel, glass, body, strip, windows] };
+  }, []);
+
+  useEffect(
+    () => () => {
+      built.group.traverse((o) => {
+        if (o instanceof THREE.Mesh) o.geometry.dispose();
+      });
+      for (const c of built.cars) c.traverse((o) => o instanceof THREE.Mesh && o.geometry.dispose());
+      for (const m of built.materials) m.dispose();
+    },
+    [built],
+  );
+
+  const s = useRef(0);
+  useFrame((_, dt) => {
+    const l = level();
+    built.windows.emissiveIntensity = 0.9 * l;
+    if (!reducedMotion) s.current += Math.min(dt, 0.1) * 7;
+    const g = train.current;
+    if (!g) return;
+    built.cars.forEach((car, i) => {
+      const [x, z, h] = along(built.segs, built.total, s.current - i * CAR_LEN);
+      car.position.set(x, GROUND_Y + DECK_Y, z);
+      car.rotation.y = h;
+    });
   });
 
   return (
-    <group>
-      <group position={[core[0], GROUND_Y + HEIGHT, core[1]]} rotation={[-Math.PI / 2, 0, 0]}>
-        <mesh material={deck}>
-          <ringGeometry args={[RING - 1.6, RING + 1.6, 96]} />
-        </mesh>
-        <mesh material={light} position={[0, 0, 0.05]}>
-          <ringGeometry args={[RING + 1.4, RING + 1.6, 96]} />
-        </mesh>
-        <mesh material={light} position={[0, 0, 0.05]}>
-          <ringGeometry args={[RING - 1.6, RING - 1.4, 96]} />
-        </mesh>
+    <>
+      <primitive object={built.group} />
+      <group ref={train}>
+        {built.cars.map((c, i) => (
+          <primitive key={i} object={c} />
+        ))}
       </group>
-      {spokes.map((s) => (
-        <group key={s.id} position={[s.pos[0], GROUND_Y + HEIGHT, s.pos[1]]} rotation={[0, s.rot, 0]}>
-          <mesh material={deck}>
-            <boxGeometry args={[2.6, 0.3, s.len]} />
-          </mesh>
-          <mesh material={light} position={[1.25, 0.2, 0]}>
-            <boxGeometry args={[0.08, 0.08, s.len]} />
-          </mesh>
-          <mesh material={light} position={[-1.25, 0.2, 0]}>
-            <boxGeometry args={[0.08, 0.08, s.len]} />
-          </mesh>
-        </group>
-      ))}
-      {pillars.map(([x, z], i) => (
-        <mesh key={i} material={pillar} position={[x, GROUND_Y + HEIGHT / 2, z]}>
-          <cylinderGeometry args={[0.32, 0.5, HEIGHT, 8]} />
-        </mesh>
-      ))}
-    </group>
+    </>
   );
 }
 
-export function Surroundings({ density, level }: Props) {
+export function Surroundings({ level, reducedMotion = false }: Props & { reducedMotion?: boolean }) {
   return (
     <>
-      <ArrivalQuarter density={density} level={level} />
-      <Skyline density={density} level={level} />
       <Plazas level={level} />
-      <ElevatedRoutes level={level} />
+      <Transit level={level} reducedMotion={reducedMotion} />
     </>
   );
 }

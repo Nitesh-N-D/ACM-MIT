@@ -3,7 +3,6 @@ import * as THREE from "three";
 /** Small procedural textures, generated once per page (no downloads). */
 
 let glow: THREE.CanvasTexture | null = null;
-let windows: THREE.CanvasTexture | null = null;
 let fade: THREE.CanvasTexture | null = null;
 
 function canvas(w: number, h: number) {
@@ -42,30 +41,6 @@ export function fadeTexture() {
   fade = new THREE.CanvasTexture(c);
   fade.colorSpace = THREE.SRGBColorSpace;
   return fade;
-}
-
-/** Lit-window grid used as the emissive map of city towers. */
-export function windowsTexture() {
-  if (windows) return windows;
-  const [c, g] = canvas(64, 128);
-  g.fillStyle = "#000";
-  g.fillRect(0, 0, 64, 128);
-  let s = 11;
-  const rnd = () => ((s = (s * 16807) % 2147483647) - 1) / 2147483646;
-  const tints = ["#3fe4ff", "#9fd8ff", "#eef4ff", "#8a6bff", "#d8b25e"];
-  for (let y = 4; y < 128; y += 8) {
-    for (let x = 4; x < 64; x += 8) {
-      const r = rnd();
-      if (r < 0.42) continue;
-      g.globalAlpha = 0.25 + rnd() * 0.75;
-      g.fillStyle = tints[Math.floor(rnd() * (r > 0.94 ? 5 : 3))]!;
-      g.fillRect(x, y, 4, 3);
-    }
-  }
-  windows = new THREE.CanvasTexture(c);
-  windows.colorSpace = THREE.SRGBColorSpace;
-  windows.wrapS = windows.wrapT = THREE.RepeatWrapping;
-  return windows;
 }
 
 let iris: THREE.CanvasTexture | null = null;

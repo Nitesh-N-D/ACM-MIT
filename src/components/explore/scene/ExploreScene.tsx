@@ -12,7 +12,8 @@ import { Platform } from "@/components/gateway/scene/Platform";
 import { Sentinel } from "@/components/gateway/scene/Sentinel";
 import { COLORS, useScene } from "@/components/gateway/scene/state";
 import { Bridge } from "@/components/gateway/scene/World";
-import { CityBlocks, Ground } from "@/components/world/CityBlocks";
+import { Ground } from "@/components/world/CityBlocks";
+import { Fabric } from "@/components/world/Fabric";
 import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Surroundings } from "@/components/world/Surroundings";
@@ -166,15 +167,15 @@ export function ExploreScene({ activity, reducedMotion }: { activity: Activity; 
       <fogExp2 attach="fog" args={[COLORS.fog, 0.0042]} />
       <Lights />
       <Starfield />
-      <Ground glow={() => arrive.current} />
+      <Ground glow={() => arrive.current} arrival />
       <Platform />
       <Motes />
       <Sentinel />
       <Artifact />
       <Gate />
       <Bridge />
-      <CityBlocks count={tier.towers} level={() => arrive.current * 0.9} />
-      <Surroundings density={tier.towers / 160} level={() => arrive.current} />
+      <Fabric detail={tier.detail} arrival environment={tier.environment} level={() => arrive.current} />
+      <Surroundings level={() => arrive.current} reducedMotion={reducedMotion} />
       <Avenues focus={focus} arrive={arrive} />
       {territories.map((t, i) => (
         <District key={t.id} id={t.id} index={i} focus={focus} arrive={arrive} activity={activity[t.id] ?? 0} />

@@ -4,7 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { territories } from "@/config/territories";
-import { CityBlocks, Ground as WorldGround } from "@/components/world/CityBlocks";
+import { Ground as WorldGround } from "@/components/world/CityBlocks";
+import { Fabric } from "@/components/world/Fabric";
 import { Landmark } from "@/components/world/landmarks";
 import { DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Glow } from "./Glow";
@@ -227,7 +228,7 @@ export function City() {
   const { ch, tier } = useScene();
   return (
     <group>
-      <CityBlocks count={tier.towers} level={() => sub(ch.city, 0, 0.8)} />
+      <Fabric detail={tier.detail === 2 ? 1 : tier.detail} arrival={false} environment={tier.environment} level={() => sub(ch.city, 0, 0.8)} />
       {territories.map((t, i) => {
         const [x, z] = DISTRICT_POS[t.id];
         return (
