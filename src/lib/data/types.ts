@@ -82,7 +82,9 @@ export type Source = "live" | "sample" | "error";
 export type Loaded<T> = { source: Source; items: T[] };
 
 export type HomeSettings = { heading?: string; subheading?: string; tagline?: string; featuredNote?: string };
-export type DistrictSettings = Partial<Record<string, { description?: string; notice?: string }>>;
+/** Per-district copy edited in the admin centre. `mission`/`vision` are used by the Central Core. */
+export type DistrictCopy = { description?: string; notice?: string; intro?: string; mission?: string; vision?: string };
+export type DistrictSettings = Partial<Record<string, DistrictCopy>>;
 export type SiteSettings = { contactEmail?: string; membershipInfo?: string; membershipOpen?: boolean; address?: string };
 export type ExperienceSettings = { introEnabled?: boolean; autoRotate?: boolean; maxQuality?: "high" | "balanced" | "low" };
 export type SettingsMap = { home: HomeSettings; districts: DistrictSettings; site: SiteSettings; experience: ExperienceSettings };

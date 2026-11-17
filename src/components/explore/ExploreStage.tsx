@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import { Component, useEffect, type ReactNode } from "react";
 import type { HeritageEntry } from "@/config/heritage";
 import type { TerritoryId } from "@/config/territories";
+import type { Digests } from "@/lib/data/districts";
 import { CityMap } from "./CityMap";
 import { ExploreHud } from "./ExploreHud";
 import { isFocusId, isHeritage, isTerritory } from "./destinations";
@@ -41,7 +42,7 @@ const NO_HERITAGE: HeritageEntry[] = [];
  * The navigable NEXUS world. The 2D map is the baseline (and what renders
  * on the server); the WebGL world replaces it when the device can run it.
  */
-export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE }: { activity?: Activity; heritage?: HeritageEntry[] }) {
+export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE, digests }: { activity?: Activity; heritage?: HeritageEntry[]; digests?: Digests }) {
   const tier = useExplore((s) => s.tier);
   const ready = useExplore((s) => s.ready);
   const flat = useExplore((s) => s.flat);
@@ -88,7 +89,7 @@ export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE }:
           </CanvasBoundary>
         </div>
       )}
-      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} heritage={heritage} />
+      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} heritage={heritage} digests={digests} />
     </section>
   );
 }

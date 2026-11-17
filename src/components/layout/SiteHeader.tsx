@@ -8,6 +8,7 @@ import { buttonClasses } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { ctaNav, isActivePath, primaryNav } from "@/config/site";
 import { cn } from "@/lib/cn";
+import { ViewSwitch } from "./ViewSwitch";
 import { SoundToggle } from "./SoundToggle";
 
 export function SiteHeader() {
@@ -81,6 +82,7 @@ export function SiteHeader() {
           </nav>
 
           <div className="flex items-center gap-1 sm:gap-2">
+            <ViewSwitch className="mr-1" />
             <SoundToggle />
             <Link
               href="/search"
@@ -147,10 +149,11 @@ export function SiteHeader() {
               </Link>
             );
           })}
+          <ViewSwitch wide className="mt-8" />
           <Link
             href={ctaNav.href}
             onClick={close}
-            className={buttonClasses({ size: "lg", className: "mt-8" })}
+            className={buttonClasses({ size: "lg", className: "mt-4" })}
           >
             {ctaNav.label}
           </Link>

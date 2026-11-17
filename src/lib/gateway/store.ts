@@ -1,6 +1,7 @@
 "use client";
 
 import { useSyncExternalStore } from "react";
+import { readViewMode } from "@/lib/view-mode";
 import { prefs, type MotionPref } from "./prefs";
 import { detectTier, resolveTier, type QualityPref, type Tier } from "./quality";
 
@@ -84,7 +85,7 @@ export const gateway = {
     const detected = detectTier();
     const tier = resolveTier(quality, detected);
     const wantsIntro = html().getAttribute("data-intro") === "play";
-    const mode = tier === "fallback" || motion === "reduced" ? "static" : "3d";
+    const mode = tier === "fallback" || motion === "reduced" || readViewMode() === "2d" ? "static" : "3d";
     const phase: GatewayPhase = mode === "3d" && wantsIntro ? "intro" : "complete";
     if (phase === "complete") reveal();
     set({ motion, quality, detected, tier, mode, phase, step: phase === "complete" ? 14 : 0 });

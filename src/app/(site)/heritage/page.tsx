@@ -76,7 +76,7 @@ export default async function Page() {
         description="Three galleries trace where the chapter comes from: ACM worldwide, ACM in India, and the ACM MIT Student Chapter itself. Every exhibit names its source."
         breadcrumbs={[{ label: "NEXUS", href: "/" }, { label: "Heritage Archive" }]}
         aside={
-          <Button href="/explore?to=heritage" variant="secondary" size="sm">
+          <Button href="/explore?to=heritage" variant="secondary" size="sm" className="world-hide">
             Walk through it in 3D →
           </Button>
         }

@@ -1,7 +1,11 @@
-import { PagePlaceholder, placeholderMetadata } from "@/components/sections/PagePlaceholder";
+import { RealmPage } from "@/components/district/RealmPage";
+import { pages } from "@/config/pages";
+import { pageMetadata } from "@/lib/seo";
 
-export const metadata = placeholderMetadata("intelligence");
+export const revalidate = 300;
+
+export const metadata = pageMetadata({ title: pages.intelligence.title, description: pages.intelligence.description, path: "/realms/intelligence" });
 
 export default function Page() {
-  return <PagePlaceholder id="intelligence" />;
+  return <RealmPage id="intelligence" realm="intelligence" title="Intelligence Realm" />;
 }

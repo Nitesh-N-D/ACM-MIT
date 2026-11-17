@@ -1,9 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { HeritageEntry } from "@/config/heritage";
 import { getTerritory, territories } from "@/config/territories";
+import type { Digests } from "@/lib/data/districts";
 import { DESTINATIONS, PLACE_IDS, destination, districtOf, interiorOf, isHeritage, isInterior, isTerritory, type FocusId } from "./destinations";
 import { HeritagePanel } from "./HeritagePanel";
 import { cameraInput, explore, useExplore, type ExploreMode } from "./store";
@@ -27,7 +29,7 @@ type View = "3d" | "loading" | "map";
 const MAP_PLACES = DESTINATIONS.filter((d) => d.id === "heritage" || !PLACE_IDS.includes(d.id as never));
 
 /** Everything the visitor can do in the world is also a real button here. */
-export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d: boolean; heritage: HeritageEntry[] }) {
+export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; canUse3d: boolean; heritage: HeritageEntry[]; digests?: Digests }) {
   const mode = useExplore((s) => s.mode);
   const focus = useExplore((s) => s.focus);
   const autoRotate = useExplore((s) => s.autoRotate);
@@ -39,6 +41,7 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
   const territory = district ? getTerritory(district) : null;
   const indoors = is3d && isInterior(focus);
   const place = destination(focus);
+  const digest = territory && digests ? digests[territory.id] : null;
 
   // Stepping through a door is a camera cut; a short fade from black covers it.
   const [veil, setVeil] = useState({ indoors, n: 0 });
@@ -136,6 +139,32 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
               </li>
             ))}
           </ul>
+          {digest && (
+            <div className="mt-4 border-t border-line pt-3">
+              <p className="font-mono text-[0.6rem] tracking-[0.2em] text-dim uppercase">
+                {indoors ? "On the displays" : digest.label}
+                {digest.source === "sample" && " · sample data"}
+              </p>
+              {digest.items.length > 0 ? (
+                <ul className="mt-2 space-y-1.5">
+                  {digest.items.map((item) => (
+                    <li key={item.href + item.title}>
+                      <Link
+                        href={item.href}
+                        {...(item.external ? { target: "_blank", rel: "noopener noreferrer" } : {})}
+                        className="group block border border-line bg-deep/60 px-2.5 py-1.5 transition-colors hover:border-line-strong"
+                      >
+                        <span className="block truncate text-sm text-ice group-hover:text-cyan">{item.title}</span>
+                        {item.meta && <span className="block truncate font-mono text-[0.58rem] tracking-[0.12em] text-mist uppercase">{item.meta}</span>}
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="mt-2 text-xs leading-relaxed text-muted">{digest.source === "error" ? "Content could not be loaded right now." : "Nothing has been published here yet."}</p>
+              )}
+            </div>
+          )}
           <div className="mt-4 flex flex-wrap gap-2">
             {is3d && !indoors && (
               <Button size="sm" onClick={() => explore.go(interiorOf(territory.id))}>
@@ -148,7 +177,7 @@ export function ExploreHud({ view, canUse3d, heritage }: { view: View; canUse3d:
               </Button>
             )}
             <Button href={territory.href} variant={is3d ? "ghost" : "primary"} size="sm">
-              {indoors ? "Open district page" : "Enter district"}
+              {is3d ? "Open pages here" : "Enter district"}
             </Button>
             <Button variant="ghost" size="sm" onClick={() => explore.reset()}>
               Back to overview
