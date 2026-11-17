@@ -12,5 +12,6 @@ export default defineConfig([
     files: ["src/components/gateway/scene/**/*.tsx", "src/components/world/**/*.tsx", "src/components/explore/scene/**/*.tsx"],
     rules: { "react-hooks/immutability": "off" },
   },
-  globalIgnores([".next/**", "out/**", "build/**", "node_modules/**", "next-env.d.ts"]),
+  // tmp/ and temp/ hold git-ignored QA scripts, not project code.
+  globalIgnores([".next/**", "out/**", "build/**", "node_modules/**", "next-env.d.ts", "tmp/**", "temp/**"]),
 ]);

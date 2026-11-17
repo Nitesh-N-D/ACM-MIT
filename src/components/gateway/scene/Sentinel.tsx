@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { Glow } from "./Glow";
 import { SentinelModel } from "./SentinelModel";
 import { irisTexture } from "./textures";
+import { artifactPosition, ease, glance } from "./motion";
 import { COLORS, clamp01, sub, useScene } from "./state";
 
 /**
@@ -22,14 +23,14 @@ type V3 = [number, number, number];
 const UP = new THREE.Vector3(0, 1, 0);
 const sides = [-1, 1] as const;
 
-/** Artifact-cradling hand targets (Sentinel-local), rest → lifted. */
-const HAND_REST = new THREE.Vector3(0.86, 4.12, 1.55);
-const HAND_LIFT = new THREE.Vector3(0.86, 5.22, 1.92);
+/** Where the figure stands; the same origin as the rigged model. */
+const ORIGIN = new THREE.Vector3(0, 0.3, -2.2);
+/** Each hand relative to the Artifact's centre (right-hand side; x mirrors). */
+const HAND_HOLD = new THREE.Vector3(0.84, -0.34, -0.06);
 const SHOULDER = new THREE.Vector3(1.78, 6.28, 0);
 const UPPER_LEN = 1.55;
 const FORE_LEN = 1.5;
 
-const ease = (x: number) => x * x * (3 - 2 * x);
 
 function Part({ g, p, r, s, m }: { g: THREE.BufferGeometry; p?: V3; r?: V3; s?: V3; m: THREE.Material }) {
   return <mesh geometry={g} position={p} rotation={r} scale={s} material={m} />;
@@ -177,8 +178,8 @@ export function ProceduralSentinel() {
 
     // Head: bowed while dormant, lifts as the eyes ignite, follows the lift.
     if (head.current) {
-      head.current.rotation.x = 0.36 * (1 - wake) + 0.14 * wake - 0.12 * lift + Math.sin(t * 0.43) * 0.012 * wake;
-      head.current.rotation.y = Math.sin(t * 0.31) * 0.035 * wake;
+      head.current.rotation.x = 0.36 * (1 - wake) + 0.14 * wake - 0.12 * lift;
+      head.current.rotation.y = glance(t) * 0.07 * wake;
     }
 
     // Eyes: lids open with the wake channel, periodic blink, small saccades.
@@ -201,13 +202,15 @@ export function ProceduralSentinel() {
     mats.energy.opacity = ch.crystal * (0.62 + 0.3 * Math.sin(t * 1.7));
     mats.reactor.opacity = clamp01(ch.crystal * (0.75 + 0.2 * Math.sin(t * 2.1)) + Math.sin(Math.PI * ch.pulse) * 0.5);
 
-    // Arms: two-bone IK from shoulder to the hand target under the artifact.
+    // Arms: two-bone IK from shoulder to a hand beside the Artifact, wherever
+    // the Artifact is this frame.
     for (let i = 0; i < 2; i++) {
       const s = sides[i]!;
       const a = arm.current[i]!;
-      tmp.target.lerpVectors(HAND_REST, HAND_LIFT, lift);
-      tmp.target.x *= s;
-      tmp.target.y += Math.sin(t * 1.3) * 0.03 * ch.crystal;
+      artifactPosition(ch, t, tmp.target).sub(ORIGIN);
+      tmp.target.x += HAND_HOLD.x * s;
+      tmp.target.y += HAND_HOLD.y;
+      tmp.target.z += HAND_HOLD.z;
       tmp.shoulder.set(SHOULDER.x * s, SHOULDER.y, SHOULDER.z);
       tmp.dir.copy(tmp.target).sub(tmp.shoulder);
       const d = Math.min(tmp.dir.length(), UPPER_LEN + FORE_LEN - 0.01);
@@ -229,7 +232,7 @@ export function ProceduralSentinel() {
   });
 
   return (
-    <group position={[0, 0.3, -2.2]}>
+    <group position={ORIGIN}>
       {/* ---------------------------------------------------------- legs */}
       {sides.map((s) => (
         <group key={`leg${s}`}>

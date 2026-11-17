@@ -4,10 +4,8 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Glow } from "./Glow";
+import { ARTIFACT_POS, ARTIFACT_SCALE, artifactPosition } from "./motion";
 import { COLORS, sub, useScene } from "./state";
-
-/** World-space rest position of the artifact (between the Sentinel's hands). */
-export const ARTIFACT_POS = new THREE.Vector3(0, 4.85, -0.5);
 
 /**
  * The Nexus Artifact: a faceted crystal conduit inside three quantum rings.
@@ -38,9 +36,9 @@ export function Artifact() {
       shard: new THREE.OctahedronGeometry(0.2, 0),
       core: new THREE.OctahedronGeometry(0.2, 0),
       // radialSegments 4 → a machined, diamond-section band.
-      band: RINGS.map((r) => new THREE.TorusGeometry(r.r, 0.036, 4, 96)),
-      channel: RINGS.map((r) => new THREE.TorusGeometry(r.r - 0.04, 0.014, 5, 96)),
-      node: new THREE.BoxGeometry(0.12, 0.12, 0.1),
+      band: RINGS.map((r) => new THREE.TorusGeometry(r.r, 0.05, 4, 96)),
+      channel: RINGS.map((r) => new THREE.TorusGeometry(r.r - 0.055, 0.02, 5, 96)),
+      node: new THREE.BoxGeometry(0.16, 0.16, 0.13),
     };
   }, []);
 
@@ -71,13 +69,8 @@ export function Artifact() {
     const c = ch.crystal;
     const flash = Math.sin(Math.PI * ch.pulse);
 
-    if (root.current) {
-      root.current.position.set(
-        ARTIFACT_POS.x,
-        ARTIFACT_POS.y + ch.lift * 1.15 + Math.sin(t * 1.3) * 0.08 * c,
-        ARTIFACT_POS.z + ch.lift * 0.35,
-      );
-    }
+    // The same position the Sentinel's hands are solved against.
+    if (root.current) artifactPosition(ch, t, root.current.position);
     if (crystal.current) {
       crystal.current.rotation.y = t * 0.55;
       crystal.current.scale.setScalar(0.7 + 0.1 * c + flash * 0.2);
@@ -105,6 +98,7 @@ export function Artifact() {
     <group ref={root} position={ARTIFACT_POS}>
       <pointLight ref={light} color={COLORS.cyan} intensity={0} distance={16} decay={2} />
 
+      <group scale={ARTIFACT_SCALE}>
       <group ref={crystal}>
         <mesh geometry={geo.crystal} material={mats.crystal} />
         <mesh geometry={geo.core} material={mats.core} scale={[1, 2.6, 1]} />
@@ -125,9 +119,10 @@ export function Artifact() {
           </group>
         </group>
       ))}
+      </group>
 
-      <Glow size={4.2} color={COLORS.cyan} intensity={(t) => ch.crystal * (0.5 + 0.15 * Math.sin(t * 2.2)) + Math.sin(Math.PI * ch.pulse) * 0.8} />
-      <Glow size={9} color={COLORS.electric} intensity={() => ch.crystal * 0.35} />
+      <Glow size={2.6} color={COLORS.cyan} intensity={(t) => ch.crystal * (0.5 + 0.15 * Math.sin(t * 2.2)) + Math.sin(Math.PI * ch.pulse) * 0.8} />
+      <Glow size={6.5} color={COLORS.electric} intensity={() => ch.crystal * 0.3} />
     </group>
   );
 }

@@ -3,7 +3,7 @@
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { ARTIFACT_POS } from "./Artifact";
+import { ARTIFACT_POS, ARTIFACT_RISE } from "./motion";
 import { glowTexture } from "./textures";
 import { COLORS, sub, useScene } from "./state";
 
@@ -65,7 +65,7 @@ export function Platform() {
     if (beamMat.current) beamMat.current.opacity = flash * 0.85;
   });
 
-  const beamTop = ARTIFACT_POS.y + 1.15;
+  const beamTop = ARTIFACT_POS.y + ARTIFACT_RISE.y;
 
   return (
     <group>

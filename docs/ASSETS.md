@@ -1,43 +1,39 @@
 # NEXUS 3D assets
 
-Everything in the 3D scenes is generated in code at runtime. No models, textures, HDRIs or audio files are downloaded or bundled, and no paid or third-party assets are used.
+Everything in the 3D scenes is generated in code at runtime, with one exception: the Sentinel character model listed below. No textures, HDRIs or audio files are downloaded or bundled, and no paid assets have been purchased.
 
-## What is a placeholder
+## Inventory
 
 | Element | Status | Source |
 | --- | --- | --- |
-| Nexus Sentinel (guardian) | **Placeholder.** Procedural armoured figure built from primitives, lathes and instanced parts. It is not a sculpted, photoreal character. | `src/components/gateway/scene/Sentinel.tsx` |
-| Nexus Artifact | Procedural (faceted crystal, three machined rings). | `src/components/gateway/scene/Artifact.tsx` |
+| Nexus Sentinel (guardian) | **Rigged GLB model**, supplied by the chapter. Procedural figure kept as the loading and error fallback. | `public/models/sentinel.glb`, driven by `src/components/gateway/scene/SentinelModel.tsx`; fallback in `Sentinel.tsx` |
+| Nexus Artifact | Procedural (faceted crystal, machined rings). | `src/components/gateway/scene/Artifact.tsx` |
 | Gateway, platform, bridge | Procedural. | `src/components/gateway/scene/` |
-| City fabric and six district landmarks | Procedural, stylised architecture. | `src/components/world/` |
-| Textures (windows, iris, glow, fade) | Drawn to canvas at runtime. | `src/components/gateway/scene/textures.ts` |
+| City fabric and district landmarks | Procedural architecture. | `src/components/world/` |
+| Textures (windows, iris, glow, fade, facades) | Drawn to canvas at runtime. | `src/components/gateway/scene/textures.ts`, `src/components/world/` |
 | Soundscape | Synthesised with Web Audio. | `src/lib/audio/engine.ts` |
 
-The Sentinel animates (breathing, head lift, eyelids, blink, eye glow, two-bone IK arms lifting the Artifact), but its anatomy and surface detail are limited by what primitives can express. Treat it as a stand-in until a real character model is supplied.
+## Sentinel model record
 
-## Replacing the Sentinel with a real model
+| Field | Value |
+| --- | --- |
+| File | `public/models/sentinel.glb` (identical copy kept at the repository root as `captain_v2.glb`) |
+| Size | 3,934,364 bytes |
+| Contents | One skinned mesh (30,258 triangles, 24 joints), one material with base-colour, normal and metallic-roughness maps, ten animation clips (`Idle_02` is the only one played) |
+| Exporter | Khronos glTF Blender I/O v4.2.57 (from the file header) |
+| Supplied by | The chapter, added to the repository by the project owner |
+| **Original source** | **Not recorded. To be confirmed by the project owner.** |
+| **Licence** | **Not recorded. To be confirmed by the project owner before the site is published.** |
 
-A production-quality guardian needs a licensed, rigged glTF/GLB. None has been added because that requires a decision on source, licence and cost.
+The file carries no author, source or licence metadata, so none is stated here. Before public launch the owner must confirm where the model came from and that its licence permits use on a public website, and whether it depicts or is derived from any existing character or real person. If that cannot be confirmed, replace it with one of the openly licensed candidates below or fall back to the procedural figure (delete the GLB and the fallback takes over automatically).
 
-Requirements for a drop-in model:
+How the model is driven: the idle clip is damped and plays on the body only; the head, neck, arms and hands are set by code every frame as absolute rotations from the bind pose (one owner per bone), with two-bone IK placing the hands around the Artifact.
 
-- Format: `.glb` (glTF 2.0), Draco or Meshopt compressed, ideally under 3 MB.
-- Budget: about 40k triangles, one or two 2K texture sets, one skeleton.
-- Height: about 8.4 scene units, standing at the origin, facing +Z.
-- Animations (clips or bones to drive): idle/breathing, head raise, arms lifting to chest height.
-- Licence: must permit use on a public website; record the licence and author here.
-
-Integration steps:
-
-1. Place the file at `public/models/sentinel.glb`.
-2. Load it lazily with `useGLTF` from `@react-three/drei` inside `Sentinel.tsx`, on the HIGH and BALANCED tiers only.
-3. Keep the procedural figure as the LOW tier and loading fallback.
-4. Map the existing channels (`ch.visor`, `ch.lift`, `ch.pulse`) to the model's clips or bones.
-5. Update the table above and add the licence details below.
+Requirements for a replacement model: `.glb` (glTF 2.0), about 40k triangles or fewer, one skeleton with `Hips`, `Spine`, `neck`, `Head` and `Left/Right` `Arm`, `ForeArm`, `Hand` bones, standing at the origin facing +Z, with an idle clip.
 
 ## Licences
 
-No third-party 3D, image or audio assets are in use.
+No other third-party 3D, image or audio assets are in use.
 
 Team, alumni and gallery photographs are uploaded by administrators through the admin centre. Only publish photographs of people who have given permission.
 
@@ -58,5 +54,5 @@ Rejected: three.js `Soldier.glb` / `Xbot.glb` (Mixamo origin, redistribution
 terms unclear); BlendSwap "Low Poly Male Knight" (CC-BY, low-poly); CGTrader
 and unlabelled Sketchfab models (not open licences).
 
-Until one of these is approved and added, the Sentinel remains the labelled
-procedural placeholder.
+These remain the fallback options if the licence of the current model cannot
+be confirmed.
