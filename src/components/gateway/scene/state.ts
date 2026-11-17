@@ -12,6 +12,10 @@ export type Channels = {
   gate: number;
   visor: number;
   platform: number;
+  raise: number; // the Sentinel raises the sword he holds
+  strike: number; // ...and drives it into the lock (1 = impact)
+  gloom: number; // the world darkening before the lightning; an envelope, not 0→1
+  shake: number; // camera shake from the impact; decays to 0
   crystal: number;
   rings: number;
   lift: number;
@@ -25,13 +29,13 @@ export type Channels = {
 };
 
 export const START: Channels = {
-  stars: 0, camA: 0, camB: 0, gate: 0, visor: 0, platform: 0, crystal: 0, rings: 0,
-  lift: 0, pulse: 0, seam: 0, doors: 0, flood: 0, bridge: 0, city: 0, frame: 0,
+  stars: 0, camA: 0, camB: 0, gate: 0, visor: 0, platform: 0, raise: 0, strike: 0, gloom: 0, shake: 0,
+  crystal: 0, rings: 0, lift: 0, pulse: 0, seam: 0, doors: 0, flood: 0, bridge: 0, city: 0, frame: 0,
 };
 
 export const FINAL: Channels = {
-  stars: 1, camA: 1, camB: 1, gate: 1, visor: 1, platform: 1, crystal: 1, rings: 1,
-  lift: 1, pulse: 1, seam: 1, doors: 1, flood: 1, bridge: 1, city: 1, frame: 1,
+  stars: 1, camA: 1, camB: 1, gate: 1, visor: 1, platform: 1, raise: 1, strike: 1, gloom: 0, shake: 0,
+  crystal: 1, rings: 1, lift: 1, pulse: 1, seam: 1, doors: 1, flood: 1, bridge: 1, city: 1, frame: 1,
 };
 
 export type SceneContext = { ch: Channels; tier: TierSettings };

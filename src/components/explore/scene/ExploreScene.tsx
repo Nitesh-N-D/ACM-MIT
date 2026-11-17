@@ -5,7 +5,7 @@ import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
 import { territories, type TerritoryId } from "@/config/territories";
-import { Artifact } from "@/components/gateway/scene/Artifact";
+import { SwordKey } from "@/components/gateway/scene/SwordKey";
 import { Gate } from "@/components/gateway/scene/Gate";
 import { Motes, Starfield } from "@/components/gateway/scene/Particles";
 import { Platform } from "@/components/gateway/scene/Platform";
@@ -172,7 +172,7 @@ export function ExploreScene({ activity, reducedMotion }: { activity: Activity; 
       <Platform />
       <Motes />
       <Sentinel />
-      <Artifact />
+      <SwordKey />
       <Gate />
       <Bridge />
       <Fabric detail={tier.detail} arrival environment={tier.environment} level={() => arrive.current} />

@@ -6,112 +6,66 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { Glow } from "./Glow";
-import { artifactPosition, ease, glance, nod } from "./motion";
+import { SENTINEL_HEIGHT, SENTINEL_ORIGIN, SWORD, SWORD_REST, ease, glance, makeSwordPose, nod, swordPose } from "./motion";
 import { COLORS, clamp01, sub, useScene } from "./state";
 
 /**
- * The Nexus Sentinel as a rigged, skinned character.
+ * The Nexus Sentinel: a gilded knight standing guard before the Gateway, his
+ * greatsword planted point-down in the platform's lock with both hands on the
+ * hilt. The sword is the key: it charges, he drives it home and turns it, and
+ * the Gateway answers.
  *
- * Model: public/models/sentinel.glb, supplied by the chapter (see
- * docs/ASSETS.md for provenance and licence notes).
+ * Model: public/models/sentinel.glb, built from the chapter-supplied scan by
+ * scripts/build-sentinel.mjs (decimated, auto-skinned to 18 joints; see
+ * docs/ASSETS.md). It has no animation clips, so every joint is driven here,
+ * and always as an absolute rotation from the bind pose (where every joint
+ * frame is the model's own axes), never "current rotation plus a bit":
  *
- * Every bone has exactly one owner:
- *
- *   - hips, spine, shoulders and legs  → the idle clip (calmed, see below)
- *   - neck and head                    → the head controller in this file
- *   - upper arms, forearms and hands   → the two-bone IK in this file,
- *                                        solved against the Artifact's own
- *                                        position (see motion.ts)
- *
- * The tracks of the bones owned here are removed from the clip, and the
- * procedural owners write absolute rotations derived from the bind pose, never
- * "current rotation plus a bit". Nothing can therefore accumulate from frame
- * to frame, whether or not the mixer happens to be running.
+ *   - Hips, Spine, Chest  → a slow breath
+ *   - neck, Head          → the head controller (bowed while dormant, glances, nods)
+ *   - Sword               → planted and turned (motion.ts)
+ *   - both arms           → two-bone IK onto the hilt
+ *   - legs                → bind pose
  */
 
 export const SENTINEL_MODEL = "/models/sentinel.glb";
 
-/** Scene height of the guardian (the model is authored ~1.9 m tall). */
-const HEIGHT = 8.4;
+/** The visor slit, relative to the Head joint (model metres). */
+const VISOR = new THREE.Vector3(0, 0.038, 0.12);
+/** The two hands on the grip: the left one above the right. */
+const LEFT_ABOVE = 0.095;
+/** How far along the grip (from the grip centre towards the pommel) the right hand sits. */
+const RIGHT_ALONG = -0.035;
 
-/**
- * The hold, in Sentinel-local scene units relative to the Artifact's centre
- * (left-hand side; x mirrors): each palm sits just outside the outer ring and
- * a little below the crystal, fingers forward and slightly up, palm turned
- * inwards and up towards it.
- */
-const PALM = new THREE.Vector3(0.76, -0.16, 0);
-const FINGERS = new THREE.Vector3(-0.22, 0.3, 0.93).normalize();
-const PALM_FACING = new THREE.Vector3(-0.92, 0.38, 0);
-/** Wrist joint → centre of the palm. */
-const PALM_REACH = 0.26;
-
-/** Bones driven procedurally; their clip tracks are dropped. */
-const OWNED = /^(Head|neck|(Left|Right)(Arm|ForeArm|Hand))\./;
-/** How much of the clip's motion around its average pose is kept. */
-const IDLE_AMOUNT = 0.4;
-/** Eyes relative to the head joint, in scene units of the bind pose. */
-const EYE_OFFSET = new THREE.Vector3(0, 0.41, 0.43);
-
-/**
- * A warm smile. The model has no face rig (no blend shapes, no jaw bone), so
- * the expression is sculpted in the vertex shader: in bind-pose model space,
- * before skinning, the mouth corners rise and draw back, the cheeks lift and
- * round, the lower lids rise and the brows relax. Because it happens before
- * skinning, the face follows every head movement. Coordinates are the face
- * of public/models/sentinel.glb (metres, figure 1.9 m tall); the mouth centre
- * sits at x 0.02, y 1.684.
- */
-const SMILE_GLSL = /* glsl */ `
+const BLADE_GLSL_COMMON = /* glsl */ `
+uniform float uSwordJoint;
+varying float vSword;
+varying float vAlong;
+`;
+/** Distance from the tip along the blade, in the authored (bind) pose. */
+const BLADE_GLSL_VERTEX = /* glsl */ `
+vSword = dot(vec4(equal(skinIndex, vec4(uSwordJoint))), skinWeight);
+vAlong = dot(position - vec3(${SWORD_REST.tip.x.toFixed(4)}, ${SWORD_REST.tip.y.toFixed(4)}, ${SWORD_REST.tip.z.toFixed(4)}),
+  normalize(vec3(${(SWORD_REST.pivot.x - SWORD_REST.tip.x).toFixed(4)}, ${(SWORD_REST.pivot.y - SWORD_REST.tip.y).toFixed(4)}, ${(SWORD_REST.pivot.z - SWORD_REST.tip.z).toFixed(4)})));
+`;
+const BLADE_GLSL_FRAGMENT_COMMON = /* glsl */ `
+uniform float uEnergy;
+uniform float uFlow;
+uniform vec3 uEnergyColor;
+varying float vSword;
+varying float vAlong;
+`;
+/** Bands of light running down the blade into the lock; the hilt barely glows. */
+const BLADE_GLSL_FRAGMENT = /* glsl */ `
 {
-  vec3 pp = position;
-  float front = smoothstep(0.11, 0.17, pp.z) * smoothstep(1.6, 1.64, pp.y) * (1.0 - smoothstep(1.8, 1.84, pp.y));
-  float dx = pp.x - 0.02;
-  float ax = abs(dx);
-  // Mouth: corners up and slightly back and outward, centre almost still.
-  float lipBand = exp(-pow((pp.y - 1.684) / 0.026, 2.0)) * (1.0 - smoothstep(0.05, 0.08, ax));
-  float curve = pow(smoothstep(0.0, 0.046, ax), 1.8);
-  vec3 d = vec3(sign(dx) * 0.005 * curve, 0.016 * curve, -0.004 * curve) * lipBand;
-  // Lower lip and chin follow a little, so the mouth widens rather than tears.
-  float chin = exp(-pow((pp.y - 1.662) / 0.02, 2.0)) * (1.0 - smoothstep(0.03, 0.07, ax));
-  d.y += 0.004 * chin;
-  // Cheeks lift and round.
-  float cheek = exp(-(pow((ax - 0.055) / 0.025, 2.0) + pow((pp.y - 1.712) / 0.02, 2.0)));
-  d += vec3(sign(dx) * 0.002, 0.007, 0.004) * cheek;
-  // Brows relax: lift a touch, inner ends most.
-  float brow = exp(-pow((pp.y - 1.765) / 0.014, 2.0)) * (1.0 - smoothstep(0.045, 0.08, ax));
-  d.y += 0.005 * brow;
-  // Lower lids rise a little: the eyes smile too.
-  float lid = exp(-(pow((ax - 0.042) / 0.02, 2.0) + pow((pp.y - 1.752) / 0.008, 2.0)));
-  d.y += 0.003 * lid;
-  transformed += d * uSmile * front;
+  float blade = 1.0 - smoothstep(0.76, 0.82, vAlong);
+  float bands = 0.55 + 0.45 * sin(vAlong * 34.0 + uFlow);
+  float edge = smoothstep(0.0, 0.08, vAlong);
+  totalEmissiveRadiance += uEnergyColor * uEnergy * vSword * (blade * bands * (0.6 + 0.4 * edge) + (1.0 - blade) * 0.12);
 }
 `;
 
-function addSmile(material: THREE.MeshStandardMaterial, smile: { value: number }) {
-  material.onBeforeCompile = (shader) => {
-    shader.uniforms.uSmile = smile;
-    shader.vertexShader = shader.vertexShader
-      .replace("#include <common>", "#include <common>\nuniform float uSmile;")
-      .replace("#include <begin_vertex>", `#include <begin_vertex>
-${SMILE_GLSL}`);
-  };
-  material.customProgramCacheKey = () => "sentinel-smile";
-}
-
-type Arm = {
-  upper: THREE.Bone;
-  fore: THREE.Bone;
-  hand: THREE.Bone;
-  rest: [THREE.Quaternion, THREE.Quaternion, THREE.Quaternion];
-  /** Bind-pose hand rotation relative to the model root. */
-  handModel: THREE.Quaternion;
-  /** Inverse of the bind-pose (fingers, palm) frame of this hand. */
-  gripInv: THREE.Quaternion;
-  side: 1 | -1;
-};
-/** A bone with its bind-pose rotation, locally and relative to the model root. */
-type Joint = { bone: THREE.Bone; rest: THREE.Quaternion; model: THREE.Quaternion };
+type Arm = { upper: THREE.Bone; fore: THREE.Bone; hand: THREE.Bone; side: 1 | -1 };
 
 const v = {
   a: new THREE.Vector3(),
@@ -125,12 +79,9 @@ const v = {
   reach: new THREE.Vector3(),
   from: new THREE.Vector3(),
   to: new THREE.Vector3(),
-  artifact: new THREE.Vector3(),
-  fingers: new THREE.Vector3(),
-  palm: new THREE.Vector3(),
-  cross: new THREE.Vector3(),
+  scale: new THREE.Vector3(),
+  axis: new THREE.Vector3(),
 };
-const basis = new THREE.Matrix4();
 const q = {
   delta: new THREE.Quaternion(),
   world: new THREE.Quaternion(),
@@ -138,9 +89,16 @@ const q = {
   root: new THREE.Quaternion(),
   rootInv: new THREE.Quaternion(),
   offset: new THREE.Quaternion(),
-  level: new THREE.Quaternion(),
+  hand: new THREE.Quaternion(),
+  mirror: new THREE.Quaternion(),
+};
+const m = {
+  world: new THREE.Matrix4(),
+  local: new THREE.Matrix4(),
+  parentInv: new THREE.Matrix4(),
 };
 const euler = new THREE.Euler();
+const pose = makeSwordPose();
 
 /** Rotates `bone` (in world space) so the direction bone→child points at `goal`. */
 function aim(bone: THREE.Bone, child: THREE.Object3D, goal: THREE.Vector3) {
@@ -154,57 +112,20 @@ function aim(bone: THREE.Bone, child: THREE.Object3D, goal: THREE.Vector3) {
   bone.quaternion.copy(q.parent.invert()).multiply(q.delta).multiply(q.world);
 }
 
-/**
- * The model's idle loop, reduced to a calm stance: tracks of the bones owned
- * procedurally are removed, and what remains keeps only a fraction of its
- * movement around the clip's own average pose. The pose is unchanged; the
- * sway becomes breathing.
- */
-function calmIdle(source: THREE.AnimationClip) {
-  const a = new THREE.Quaternion();
-  const b = new THREE.Quaternion();
-  const mean = new THREE.Quaternion();
-  const tracks: THREE.KeyframeTrack[] = [];
-  for (const original of source.tracks) {
-    if (OWNED.test(original.name)) continue;
-    const track = original.clone();
-    const values = track.values;
-    if (track.ValueTypeName === "quaternion") {
-      const sum = [0, 0, 0, 0];
-      for (let i = 0; i < values.length; i += 4) {
-        // q and -q are the same rotation: keep every key in one hemisphere.
-        const sign = values[i]! * values[0]! + values[i + 1]! * values[1]! + values[i + 2]! * values[2]! + values[i + 3]! * values[3]! < 0 ? -1 : 1;
-        for (let k = 0; k < 4; k++) sum[k]! += values[i + k]! * sign;
-      }
-      mean.set(sum[0]!, sum[1]!, sum[2]!, sum[3]!).normalize();
-      for (let i = 0; i < values.length; i += 4) {
-        a.fromArray(values, i);
-        if (a.dot(mean) < 0) a.set(-a.x, -a.y, -a.z, -a.w);
-        // Not a.slerpQuaternions(mean, a, …): that overwrites its own input.
-        b.copy(mean).slerp(a, IDLE_AMOUNT).toArray(values, i);
-      }
-    } else if (track.name.endsWith(".position")) {
-      const sum = [0, 0, 0];
-      const n = values.length / 3;
-      for (let i = 0; i < values.length; i++) sum[i % 3]! += values[i]! / n;
-      for (let i = 0; i < values.length; i++) values[i] = sum[i % 3]! + (values[i]! - sum[i % 3]!) * IDLE_AMOUNT;
-    }
-    tracks.push(track);
-  }
-  return new THREE.AnimationClip(`${source.name}:calm`, source.duration, tracks);
+/** Sets a bone's world rotation to root × `model` (a rotation in model space). */
+function setModelRotation(bone: THREE.Bone, model: THREE.Quaternion) {
+  q.world.copy(q.root).multiply(model);
+  bone.parent!.getWorldQuaternion(q.parent);
+  bone.quaternion.copy(q.parent.invert()).multiply(q.world);
 }
 
-/** Rotation whose x axis is the fingers and whose y axis is the palm's facing. */
-function grip(fingers: THREE.Vector3, palm: THREE.Vector3, out: THREE.Quaternion) {
-  v.palm.copy(palm).addScaledVector(fingers, -palm.dot(fingers)).normalize();
-  v.cross.crossVectors(fingers, v.palm);
-  return out.setFromRotationMatrix(basis.makeBasis(fingers, v.palm, v.cross));
-}
+/** Mirror image of a rotation across the model's YZ plane (left ↔ right). */
+const mirrorX = (src: THREE.Quaternion, out: THREE.Quaternion) => out.set(src.x, -src.y, -src.z, src.w);
 
 declare global {
   interface Window {
     /** Read-only handle on the Sentinel rig for automated QA. */
-    __nexusSentinel?: { root: THREE.Object3D; mixer: THREE.AnimationMixer };
+    __nexusSentinel?: { root: THREE.Object3D };
   }
 }
 
@@ -221,7 +142,7 @@ export function SentinelModel() {
     // reliable before its skeleton has been updated.
     const box = new THREE.Box3();
     const materials: THREE.Material[] = [];
-    const smile = { value: 0 };
+    const energy = { uEnergy: { value: 0 }, uFlow: { value: 0 }, uEnergyColor: { value: new THREE.Color(COLORS.cyan) }, uSwordJoint: { value: -1 } };
     root.traverse((o) => {
       const mesh = o as THREE.SkinnedMesh;
       if (!mesh.isMesh) return;
@@ -229,139 +150,151 @@ export function SentinelModel() {
       if (mesh.geometry.boundingBox) box.union(mesh.geometry.boundingBox);
       // Skinned bounds drift with the pose; the figure is always in view anyway.
       mesh.frustumCulled = false;
-      const m = (mesh.material as THREE.MeshStandardMaterial).clone();
-      m.envMapIntensity = 1.15;
-      addSmile(m, smile);
-      mesh.material = m;
-      materials.push(m);
+      if (mesh.isSkinnedMesh) energy.uSwordJoint.value = mesh.skeleton.bones.findIndex((b) => b.name === "Sword");
+      const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
+      mat.envMapIntensity = 1.2;
+      mat.onBeforeCompile = (shader) => {
+        Object.assign(shader.uniforms, energy);
+        shader.vertexShader = shader.vertexShader
+          .replace("#include <common>", `#include <common>\n${BLADE_GLSL_COMMON}`)
+          .replace("#include <begin_vertex>", `#include <begin_vertex>\n${BLADE_GLSL_VERTEX}`);
+        shader.fragmentShader = shader.fragmentShader
+          .replace("#include <common>", `#include <common>\n${BLADE_GLSL_FRAGMENT_COMMON}`)
+          .replace("#include <emissivemap_fragment>", `#include <emissivemap_fragment>\n${BLADE_GLSL_FRAGMENT}`);
+      };
+      mat.customProgramCacheKey = () => "sentinel-blade";
+      mesh.material = mat;
+      materials.push(mat);
     });
-    const scale = HEIGHT / Math.max(0.001, box.max.y - box.min.y);
+    const scale = SENTINEL_HEIGHT / Math.max(0.001, box.max.y - box.min.y);
     const bone = (name: string) => root.getObjectByName(name) as THREE.Bone | undefined;
-
-    // Bind-pose references. The clone is still exactly as authored here.
-    root.updateWorldMatrix(true, true);
-    const rootInv = root.getWorldQuaternion(new THREE.Quaternion()).invert();
-    const joint = (b: THREE.Bone | undefined): Joint | undefined =>
-      b && { bone: b, rest: b.quaternion.clone(), model: rootInv.clone().multiply(b.getWorldQuaternion(new THREE.Quaternion())) };
 
     const arms: Arm[] = [];
     for (const [prefix, side] of [["Left", 1], ["Right", -1]] as const) {
       const upper = bone(`${prefix}Arm`);
       const fore = bone(`${prefix}ForeArm`);
       const hand = bone(`${prefix}Hand`);
-      if (!upper || !fore || !hand) continue;
-      // Bind pose: arms out to the sides, fingers pointing away from the body, palms down.
-      const gripInv = grip(new THREE.Vector3(side, 0, 0), new THREE.Vector3(0, -1, 0), new THREE.Quaternion()).invert();
-      const handModel = rootInv.clone().multiply(hand.getWorldQuaternion(new THREE.Quaternion()));
-      arms.push({ upper, fore, hand, rest: [upper.quaternion.clone(), fore.quaternion.clone(), hand.quaternion.clone()], handModel, gripInv, side });
+      if (upper && fore && hand) arms.push({ upper, fore, hand, side });
+    }
+    // Every bind rotation is the identity; keep them anyway, should that change.
+    const rest = new Map<THREE.Object3D, THREE.Quaternion>();
+    root.traverse((o) => {
+      if ((o as THREE.Bone).isBone) rest.set(o, o.quaternion.clone());
+    });
+    // The right hand's authored grip, relative to the sword (model metres).
+    const rightWrist = new THREE.Vector3();
+    const right = arms.find((a) => a.side === -1);
+    root.updateWorldMatrix(true, true);
+    if (right) {
+      right.hand.getWorldPosition(rightWrist);
+      root.worldToLocal(rightWrist).sub(SWORD_REST.pivot);
     }
 
-    const source = gltf.animations.find((c) => /idle/i.test(c.name)) ?? gltf.animations[0];
     return {
       root,
       scale,
       minY: box.min.y,
       materials,
-      smile,
+      energy,
       arms,
-      mixer: new THREE.AnimationMixer(root),
-      idle: source ? calmIdle(source) : null,
-      head: joint(bone("Head")),
-      neck: joint(bone("neck")),
+      rest,
+      rightWrist,
+      hips: bone("Hips"),
+      spine: bone("Spine"),
+      chest: bone("Chest"),
+      head: bone("Head"),
+      neck: bone("neck"),
+      sword: bone("Sword"),
     };
   }, [gltf]);
 
-  // The clip is started and stopped by the same effect, so an effect that is
-  // torn down and run again (Strict Mode, a hidden then re-shown route) always
-  // leaves it playing. Geometry and textures belong to the shared GLTF cache
-  // and are left alone; the cloned materials are this component's to release.
+  // Geometry and textures belong to the shared GLTF cache and are left alone;
+  // the cloned materials are this component's to release.
   useEffect(() => {
-    const action = rig.idle ? rig.mixer.clipAction(rig.idle) : null;
-    action?.reset().play();
-    window.__nexusSentinel = { root: rig.root, mixer: rig.mixer };
+    window.__nexusSentinel = { root: rig.root };
     return () => {
-      rig.mixer.stopAllAction();
-      rig.mixer.uncacheRoot(rig.root);
-      for (const m of rig.materials) m.dispose();
+      for (const mat of rig.materials) mat.dispose();
       if (window.__nexusSentinel?.root === rig.root) delete window.__nexusSentinel;
     };
   }, [rig]);
 
-  // A warm key light on the face only: the city and the Artifact light him in
-  // cold cyan from below, which reads as stern; this lets the smile show.
-  const faceLight = useMemo(() => {
-    const l = new THREE.SpotLight("#ffd9b8", 0, 14, 0.3, 0.9, 2);
-    l.position.set(0.6, 10.8, 5.4);
-    l.target.position.set(0, 7.5, 0.4);
+  // A warm key light on the helm: the city and the blade light him in cold
+  // cyan from below, which flattens the gold.
+  const keyLight = useMemo(() => {
+    const l = new THREE.SpotLight("#ffe2c0", 0, 16, 0.42, 0.9, 2);
+    l.position.set(1.2, 11.5, 6.2);
+    l.target.position.set(0, 6.6, 0.4);
     return l;
   }, []);
-  useEffect(() => () => faceLight.dispose(), [faceLight]);
+  useEffect(() => () => keyLight.dispose(), [keyLight]);
 
-  useFrame(({ clock }, dt) => {
+  useFrame(({ clock }) => {
     const t = clock.elapsedTime;
     const wake = ease(clamp01(ch.visor));
-    faceLight.intensity = 46 * wake;
-    const lift = ease(clamp01(ch.lift));
+    keyLight.intensity = 30 * (0.35 + 0.65 * wake);
+    const flash = Math.sin(Math.PI * clamp01(ch.pulse));
+    rig.energy.uEnergy.value = 0.15 * wake + 1.6 * clamp01(ch.crystal) + 3 * flash;
+    rig.energy.uFlow.value = t * (1.5 + 4 * clamp01(ch.crystal));
 
-    // Body: the calmed idle, a slow breath; slower still while dormant.
-    rig.mixer.update(Math.min(dt, 0.05) * (0.3 + 0.3 * wake));
-
-    // Head and neck. The head is held level in the model's own frame, like a
-    // person's: the torso may breathe underneath it, the gaze does not swim.
-    // On top of that: bowed while dormant, raised on waking, and now and then
-    // an unhurried glance to one side.
-    // Awake, he smiles, carries his head with a slight, friendly tilt, and
-    // every so often gives a small nod of welcome that deepens the smile.
-    const welcome = nod(t) * wake;
-    const pitch = 0.4 * (1 - wake) + 0.04 * wake - 0.07 * lift + 0.07 * welcome;
-    const yaw = glance(t) * 0.07 * wake;
-    const roll = 0.045 * wake;
-    // The scene views him from below and in cool light, which flattens the
-    // expression, so the awake smile runs a little above the sculpted 1.0.
-    const smileTarget = 0.35 + 0.9 * wake + 0.1 * welcome;
-    rig.smile.value += (smileTarget - rig.smile.value) * Math.min(1, dt * 3);
+    for (const [b, r] of rig.rest) b.quaternion.copy(r);
     rig.root.getWorldQuaternion(q.root);
     q.rootInv.copy(q.root).invert();
+
+    // Breath: the chest rises and settles, slower while dormant.
+    const breath = Math.sin(t * (0.8 + 0.3 * wake));
+    rig.spine?.quaternion.setFromEuler(euler.set(-0.012 * breath, 0, 0));
+    rig.chest?.quaternion.setFromEuler(euler.set(-0.016 * breath, 0, 0));
+
+    // Head and neck, held level in the model's own frame so the gaze does not
+    // swim with the breath: bowed over the sword while dormant, raised on
+    // waking, now and then an unhurried glance aside or a nod of welcome.
+    const welcome = nod(t) * wake;
+    const pitch = 0.42 * (1 - wake) + 0.04 * wake + 0.06 * welcome + 0.05 * ease(clamp01(ch.lift)) * (1 - clamp01(ch.doors));
+    const yaw = glance(t) * 0.08 * wake;
     if (rig.neck) {
-      const { bone, rest, model } = rig.neck;
-      bone.parent!.getWorldQuaternion(q.parent);
-      // Halfway between following the chest and staying level.
-      q.world.copy(q.parent).multiply(rest);
-      q.level.copy(q.root).multiply(model);
-      q.world.slerp(q.level, 0.5);
-      q.offset.setFromEuler(euler.set(pitch * 0.4, yaw * 0.4, roll * 0.4, "YXZ"));
-      q.world.premultiply(q.delta.copy(q.root).multiply(q.offset).multiply(q.rootInv));
-      bone.quaternion.copy(q.parent.invert()).multiply(q.world);
+      q.offset.setFromEuler(euler.set(pitch * 0.4, yaw * 0.4, 0, "YXZ"));
+      setModelRotation(rig.neck, q.offset);
     }
     if (rig.head) {
-      const { bone, model } = rig.head;
-      q.offset.setFromEuler(euler.set(pitch, yaw, roll, "YXZ"));
-      q.world.copy(q.root).multiply(q.offset).multiply(model);
-      bone.parent!.getWorldQuaternion(q.parent);
-      bone.quaternion.copy(q.parent.invert()).multiply(q.world);
+      q.offset.setFromEuler(euler.set(pitch, yaw, 0, "YXZ"));
+      setModelRotation(rig.head, q.offset);
+    }
+    rig.root.updateWorldMatrix(true, true);
 
-      // The eye glow rides on the head instead of hanging in the air.
-      if (eyes.current && group.current) {
-        bone.getWorldPosition(v.a);
-        group.current.worldToLocal(v.a);
-        eyes.current.position.copy(v.b.copy(EYE_OFFSET).applyQuaternion(q.offset)).add(v.a);
-      }
+    // The eyes glow through the visor and ride on the head.
+    if (rig.head && eyes.current && group.current) {
+      rig.head.getWorldPosition(v.a);
+      group.current.worldToLocal(v.a);
+      eyes.current.position.copy(v.b.copy(VISOR).multiplyScalar(rig.scale).applyQuaternion(q.offset)).add(v.a);
     }
 
-    // Arms: analytic two-bone IK that puts each palm beside the Artifact,
-    // wherever the Artifact is this frame. Solved from the bind pose every
-    // time, so the result depends only on the target.
-    if (!group.current) return;
-    artifactPosition(ch, t, v.artifact);
-    group.current.worldToLocal(v.artifact);
-    for (const arm of rig.arms) {
-      arm.upper.quaternion.copy(arm.rest[0]);
-      arm.fore.quaternion.copy(arm.rest[1]);
-      arm.hand.quaternion.copy(arm.rest[2]);
+    // The sword: planted, driven home and turned (model space → its joint).
+    swordPose(ch, pose);
+    if (rig.sword) {
+      q.hand.copy(pose.turn).multiply(pose.planted);
+      m.world.compose(pose.pivot, q.hand, v.scale.setScalar(SWORD.scale)).premultiply(rig.root.matrixWorld);
+      m.parentInv.copy(rig.sword.parent!.matrixWorld).invert();
+      m.local.multiplyMatrices(m.parentInv, m.world).decompose(rig.sword.position, rig.sword.quaternion, rig.sword.scale);
+      rig.sword.updateWorldMatrix(false, true);
+    }
 
-      v.fingers.set(FINGERS.x * arm.side, FINGERS.y, FINGERS.z);
-      v.target.set(PALM.x * arm.side, PALM.y, PALM.z).add(v.artifact).addScaledVector(v.fingers, -PALM_REACH);
-      group.current.localToWorld(v.target);
+    // Arms: analytic two-bone IK putting both hands on the grip, the right in
+    // its authored grip, the left as its mirror image just above it. Solved
+    // from the bind pose every frame, so the result depends only on the sword.
+    for (const arm of rig.arms) {
+      if (arm.side === -1) {
+        q.hand.copy(pose.planted);
+        v.target.copy(rig.rightWrist).applyQuaternion(pose.planted);
+        v.target.y += RIGHT_ALONG;
+      } else {
+        mirrorX(pose.planted, q.hand);
+        v.target.copy(rig.rightWrist).applyQuaternion(pose.planted);
+        v.target.set(-v.target.x, v.target.y + RIGHT_ALONG + LEFT_ABOVE, v.target.z);
+      }
+      // The key turn carries both hands round the blade.
+      v.target.applyQuaternion(pose.turn).add(pose.pivot);
+      q.hand.premultiply(pose.turn);
+      rig.root.localToWorld(v.target);
 
       arm.upper.getWorldPosition(v.shoulder);
       arm.fore.getWorldPosition(v.b);
@@ -369,36 +302,33 @@ export function SentinelModel() {
       const upperLen = v.shoulder.distanceTo(v.b);
       const foreLen = v.b.distanceTo(v.c);
       v.dir.copy(v.target).sub(v.shoulder);
-      const d = Math.min(v.dir.length(), (upperLen + foreLen) * 0.985);
+      const d = Math.min(v.dir.length(), (upperLen + foreLen) * 0.995);
       v.dir.normalize();
       const along = (upperLen * upperLen - foreLen * foreLen + d * d) / (2 * d);
       const out = Math.sqrt(Math.max(0, upperLen * upperLen - along * along));
-      // Elbows swing outwards, down and slightly back.
-      v.pole.set(arm.side * 0.8, -0.6, -0.35);
+      // Elbows out to the sides and a little down: a guard at rest.
+      q.world.copy(q.root);
+      v.pole.set(arm.side * 0.9, -0.45, -0.1).applyQuaternion(q.world);
       v.pole.addScaledVector(v.dir, -v.pole.dot(v.dir)).normalize();
       v.elbow.copy(v.shoulder).addScaledVector(v.dir, along).addScaledVector(v.pole, out);
       v.reach.copy(v.shoulder).addScaledVector(v.dir, d);
       aim(arm.upper, arm.fore, v.elbow);
+      arm.upper.updateWorldMatrix(false, true);
       aim(arm.fore, arm.hand, v.reach);
-
-      // Hand: fingers and palm set outright, relative to the model.
-      grip(v.fingers, v.to.set(PALM_FACING.x * arm.side, PALM_FACING.y, PALM_FACING.z), q.offset).multiply(arm.gripInv);
-      q.world.copy(q.root).multiply(q.offset).multiply(arm.handModel);
-      arm.hand.parent!.getWorldQuaternion(q.parent);
-      arm.hand.quaternion.copy(q.parent.invert()).multiply(q.world);
+      arm.fore.updateWorldMatrix(false, true);
+      setModelRotation(arm.hand, q.hand);
     }
   });
 
   return (
-    <group ref={group} position={[0, 0.3, -2.2]}>
-      <primitive object={faceLight} />
-      <primitive object={faceLight.target} />
+    <group ref={group} position={SENTINEL_ORIGIN}>
+      <primitive object={keyLight} />
+      <primitive object={keyLight.target} />
       <primitive object={rig.root} scale={rig.scale} position={[0, -rig.minY * rig.scale, 0]} />
-      {/* Energy response: eyes and chest answer the artifact. */}
-      <group ref={eyes} position={[0, 7.72, 0.62]}>
-        <Glow size={0.8} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.2 + 0.05 * Math.sin(t * 3.1))} />
+      {/* The eyes kindle behind the visor as he wakes. */}
+      <group ref={eyes} position={[0, 7.6, 0.75]}>
+        <Glow size={0.75} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.32 + 0.06 * Math.sin(t * 3.1))} />
       </group>
-      <Glow position={[0, 5.9, 0.95]} size={2.6} color={COLORS.cyan} intensity={() => clamp01(ch.crystal * 0.3 + Math.sin(Math.PI * ch.pulse) * 0.35)} />
     </group>
   );
 }

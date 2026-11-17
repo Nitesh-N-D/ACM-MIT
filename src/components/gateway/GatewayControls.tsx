@@ -22,16 +22,33 @@ export function GatewayControls() {
   const detected = useGateway((s) => s.detected);
   const qualityId = useId();
 
+  const waiting = useGateway((s) => s.waiting);
+
   const playing = phase === "intro" && mode === "3d";
 
-  // Escape skips the intro.
+  // Escape skips the intro. Enter (or a tap on the scene, for touch screens)
+  // gives the Sentinel the word to strike.
   useEffect(() => {
     if (!playing) return;
+    // Leave other controls alone (links, the Skip button, fields).
+    const onControl = (t: EventTarget | null) =>
+      !!(t as Element | null)?.closest?.("a, button, input, select, textarea, label, [contenteditable]");
     const onKey = (e: KeyboardEvent) => {
       if (e.key === "Escape") gateway.skip();
+      if (e.key !== "Enter" || e.repeat || !gateway.get().waiting || onControl(e.target)) return;
+      e.preventDefault();
+      gateway.strike();
+    };
+    const onTap = (e: PointerEvent) => {
+      if (!gateway.get().waiting || onControl(e.target)) return;
+      if ((e.target as Element | null)?.closest?.("[data-gateway-stage]")) gateway.strike();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    window.addEventListener("pointerup", onTap);
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      window.removeEventListener("pointerup", onTap);
+    };
   }, [playing]);
 
   if (phase === "boot") return null;
@@ -42,9 +59,18 @@ export function GatewayControls() {
     return (
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 px-4 pb-6 sm:px-8 sm:pb-10">
         <p className="sr-only" role="status">
-          NEXUS activation sequence playing. Press Skip intro or Escape to
-          continue.
+          {waiting
+            ? "The Sentinel holds the sword raised. Press Enter to drive it into the lock."
+            : "NEXUS activation sequence playing. Press Skip intro or Escape to continue."}
         </p>
+        {waiting && (
+          <p
+            aria-hidden="true"
+            className="mx-auto mb-8 max-w-5xl text-center font-mono text-[0.68rem] tracking-[0.32em] text-cyan uppercase motion-safe:animate-pulse"
+          >
+            The Sentinel awaits your word · press Enter
+          </p>
+        )}
         <div className="mx-auto flex max-w-5xl items-end justify-between gap-6">
           <div aria-hidden="true" className="min-w-0 flex-1">
             <p className="font-mono text-[0.65rem] tracking-[0.3em] text-cyan uppercase">

@@ -22,6 +22,10 @@ export type GatewayState = {
   motion: MotionPref;
   /** Canvas has compiled and drawn its first frame. */
   ready: boolean;
+  /** The intro is holding: the Sentinel waits, sword raised, for the visitor. */
+  waiting: boolean;
+  /** The visitor has given the word; the sword is struck into the lock. */
+  struck: boolean;
   /** Incremented to request skip / replay from the scene director. */
   skipToken: number;
   replayToken: number;
@@ -36,6 +40,8 @@ const initial: GatewayState = {
   tier: "fallback",
   motion: "full",
   ready: false,
+  waiting: false,
+  struck: false,
   skipToken: 0,
   replayToken: 0,
 };
@@ -87,10 +93,21 @@ export const gateway = {
   setStep: (step: number) => set({ step }),
   setReady: (ready: boolean) => set({ ready }),
 
+  /** The director reached the strike: hold until the visitor gives the word. */
+  hold() {
+    if (state.phase === "intro" && !state.struck) set({ waiting: true });
+  },
+
+  /** Enter (or the Strike button): drive the sword home and play on. */
+  strike() {
+    if (state.phase !== "intro" || state.struck || !state.waiting) return;
+    set({ struck: true, waiting: false });
+  },
+
   complete() {
     reveal();
     prefs.markIntroSeen();
-    set({ phase: "complete", step: 14 });
+    set({ phase: "complete", step: 14, waiting: false, struck: true });
   },
 
   skip() {
@@ -103,13 +120,13 @@ export const gateway = {
   replay() {
     if (state.mode !== "3d") return;
     html().setAttribute("data-intro", "play");
-    set({ phase: "intro", step: 0, replayToken: state.replayToken + 1 });
+    set({ phase: "intro", step: 0, waiting: false, struck: false, replayToken: state.replayToken + 1 });
   },
 
   /** 3D failed (no context, import error, timeout): fall back to static art. */
   fail() {
     reveal();
-    set({ mode: "static", tier: "fallback", phase: "complete", ready: false });
+    set({ mode: "static", tier: "fallback", phase: "complete", ready: false, waiting: false });
   },
 
   setMotion(motion: MotionPref) {
@@ -122,6 +139,7 @@ export const gateway = {
       motion,
       mode,
       phase: mode === "static" ? "complete" : state.phase,
+      waiting: mode === "static" ? false : state.waiting,
       step: 14,
       ready: mode === state.mode ? state.ready : false,
     });

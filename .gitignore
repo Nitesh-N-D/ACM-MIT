@@ -21,7 +21,11 @@ next-env.d.ts
 tmp/
 temp/
 .cache/
+.backup/
 npm-debug.log*
+
+# source archives (large, user-supplied; processed by scripts/build-sentinel.mjs)
+*.zip
 
 # OS / editor
 .DS_Store

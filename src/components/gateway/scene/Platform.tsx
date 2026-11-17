@@ -1,9 +1,9 @@
-"use client";
+﻿"use client";
 
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
-import { ARTIFACT_POS, ARTIFACT_RISE } from "./motion";
+import { SWORD_HILT, SWORD_SOCKET } from "./motion";
 import { glowTexture } from "./textures";
 import { COLORS, sub, useScene } from "./state";
 
@@ -55,7 +55,7 @@ export function Platform() {
     if (spokesMat.current) spokesMat.current.opacity = sub(p, 0.5, 1) * 0.22;
     if (coreMat.current) coreMat.current.opacity = p * (0.5 + 0.2 * Math.sin(t * 2));
 
-    // Energy pulse: beam from artifact down + shockwave across the platform.
+    // Energy pulse: a column of light up the planted sword + shockwave across the platform.
     const flash = Math.sin(Math.PI * ch.pulse);
     if (waveMat.current && wave.current) {
       waveMat.current.opacity = flash * 0.9;
@@ -65,7 +65,7 @@ export function Platform() {
     if (beamMat.current) beamMat.current.opacity = flash * 0.85;
   });
 
-  const beamTop = ARTIFACT_POS.y + ARTIFACT_RISE.y;
+  const beamTop = SWORD_HILT.y + 1.2;
 
   return (
     <group>
@@ -98,7 +98,7 @@ export function Platform() {
         <lineBasicMaterial ref={spokesMat} color={COLORS.cyan} transparent opacity={0} depthWrite={false} toneMapped={false} />
       </lineSegments>
 
-      <mesh geometry={geo.beam} position={[0, beamTop / 2, ARTIFACT_POS.z]} scale={[1, beamTop, 1]}>
+      <mesh geometry={geo.beam} position={[0, beamTop / 2, SWORD_SOCKET.z]} scale={[1, beamTop, 1]}>
         <meshBasicMaterial ref={beamMat} color={COLORS.ice} transparent opacity={0} depthWrite={false} blending={THREE.AdditiveBlending} toneMapped={false} side={THREE.DoubleSide} />
       </mesh>
     </group>

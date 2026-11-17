@@ -6,7 +6,9 @@ import gsap from "gsap";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { gateway, useGateway } from "@/lib/gateway/store";
-import { Artifact } from "./Artifact";
+import { HOLD_STEP, STRIKE_IMPACT, STRIKE_STEP } from "@/lib/gateway/steps";
+import { Lightning } from "./Lightning";
+import { SwordKey } from "./SwordKey";
 import { Gate } from "./Gate";
 import { Motes, Starfield } from "./Particles";
 import { Platform } from "./Platform";
@@ -61,8 +63,19 @@ function CameraRig() {
     const settle = ch.frame;
     tmp.pos.x += Math.sin(t * 0.17) * 0.6 * settle + p.sx * 1.6 * settle;
     tmp.pos.y += Math.sin(t * 0.23) * 0.25 * settle - p.sy * 0.7 * settle;
+
+    // The impact shakes the world: a hard downward jolt, then a rattle that dies away.
+    const sh = ch.shake * ch.shake;
+    if (sh > 1e-4) {
+      tmp.pos.y -= 0.5 * sh * sh * sh;
+      tmp.pos.x += (Math.sin(t * 61) + Math.sin(t * 37.3)) * 0.3 * sh;
+      tmp.pos.y += (Math.sin(t * 53.7) + Math.sin(t * 29.1)) * 0.36 * sh;
+      tmp.pos.z += Math.sin(t * 43.9) * 0.14 * sh;
+      tmp.look.y += Math.sin(t * 47.2) * 0.22 * sh;
+    }
     camera.position.copy(tmp.pos);
     camera.lookAt(tmp.look);
+    if (sh > 1e-4) camera.rotateZ((Math.sin(t * 39.1) + Math.sin(t * 23.7)) * 0.012 * sh);
 
     // Wide screens: shift the monument right of the hero copy.
     const aspect = size.width / Math.max(1, size.height);
@@ -81,26 +94,35 @@ function CameraRig() {
  * Director: the 15-step activation sequence as one GSAP timeline.
  * ------------------------------------------------------------------------- */
 
-type Cue = { step: number; at: number; tweens: [keyof Channels, number, string?][] };
+/** [channel, duration, ease, delay after the cue] — each tween runs the channel 0 → 1. */
+type Cue = { step: number; at: number; tweens: [keyof Channels, number, string?, number?][] };
+
+/** The sequence holds here, sword raised, until the visitor presses Enter. */
+const HOLD_AT = 5.8;
+/** Everything after the hold starts from here. */
+const H = HOLD_AT + 0.01;
+/** The blade hits the lock. */
+const IMPACT = H + STRIKE_IMPACT;
 
 const CUES: Cue[] = [
   { step: 0, at: 0, tweens: [["stars", 2.2]] },
-  { step: 1, at: 0.3, tweens: [["camA", 6.6, "power2.inOut"]] },
+  { step: 1, at: 0.3, tweens: [["camA", 5.4, "power2.inOut"]] },
   { step: 2, at: 1.2, tweens: [["gate", 2.2]] },
   { step: 3, at: 2.4, tweens: [["visor", 0.9]] },
   { step: 4, at: 3.0, tweens: [["platform", 1.8, "power1.inOut"]] },
-  { step: 5, at: 3.8, tweens: [["crystal", 1.4]] },
-  { step: 6, at: 4.6, tweens: [["rings", 1.6]] },
-  { step: 7, at: 5.6, tweens: [["lift", 1.4, "power2.inOut"]] },
-  { step: 8, at: 6.6, tweens: [["pulse", 0.9, "none"]] },
-  { step: 9, at: 7.2, tweens: [["seam", 0.6]] },
-  { step: 10, at: 7.8, tweens: [["doors", 1.7, "power2.inOut"]] },
-  { step: 11, at: 8.4, tweens: [["flood", 1.1]] },
-  { step: 12, at: 9.0, tweens: [["bridge", 2.9, "power1.inOut"]] },
-  { step: 13, at: 9.6, tweens: [["camB", 3.4, "power2.inOut"], ["frame", 3.4, "power2.inOut"]] },
-  { step: 14, at: 10.6, tweens: [["city", 2.4]] },
+  { step: HOLD_STEP, at: 3.9, tweens: [["raise", 1.6, "power2.inOut"]] },
+  // A short wind-up, then down hard: back.in lifts before it falls.
+  { step: STRIKE_STEP, at: H, tweens: [["strike", STRIKE_IMPACT, "back.in(1.6)"], ["crystal", 1.1, "power2.out", STRIKE_IMPACT]] },
+  { step: 7, at: H + 1.7, tweens: [["rings", 1.6], ["lift", 1.3, "power2.inOut", 0.8]] },
+  { step: 8, at: H + 3.3, tweens: [["pulse", 0.9, "none"]] },
+  { step: 9, at: H + 3.9, tweens: [["seam", 0.6]] },
+  { step: 10, at: H + 4.5, tweens: [["doors", 1.7, "power2.inOut"]] },
+  { step: 11, at: H + 5.1, tweens: [["flood", 1.1]] },
+  { step: 12, at: H + 5.7, tweens: [["bridge", 2.9, "power1.inOut"]] },
+  { step: 13, at: H + 6.3, tweens: [["camB", 3.4, "power2.inOut"], ["frame", 3.4, "power2.inOut"]] },
+  { step: 14, at: H + 7.3, tweens: [["city", 2.4]] },
 ];
-const COMPLETE_AT = 12.6;
+const COMPLETE_AT = H + 9.3;
 
 function Director() {
   const { ch } = useScene();
@@ -120,7 +142,11 @@ function Director() {
   // stalling the sequence or skipping whole beats in one frame.
   useFrame((_, dt) => {
     const t = tl.current;
-    if (t && t.progress() < 1) t.time(t.time() + Math.min(dt, 0.25), false);
+    if (t && t.progress() < 1) {
+      // Until the visitor strikes, the playhead stops at the hold.
+      const cap = gateway.get().struck ? t.duration() : HOLD_AT;
+      if (t.time() < cap) t.time(Math.min(cap, t.time() + Math.min(dt, 0.25)), false);
+    }
     if (!firstFrame.current) {
       firstFrame.current = true;
       // Defer one tick so the frame is actually on screen.
@@ -139,10 +165,16 @@ function Director() {
     const t = gsap.timeline({ paused: true, defaults: { ease: "power2.out" } });
     for (const cue of CUES) {
       t.call(() => gateway.setStep(cue.step), undefined, cue.at);
-      for (const [key, dur, ease] of cue.tweens) {
-        t.fromTo(ch, { [key]: 0 }, { [key]: 1, duration: dur, ease: ease ?? "power2.out", immediateRender: false }, cue.at);
+      for (const [key, dur, ease, delay] of cue.tweens) {
+        t.fromTo(ch, { [key]: 0 }, { [key]: 1, duration: dur, ease: ease ?? "power2.out", immediateRender: false }, cue.at + (delay ?? 0));
       }
     }
+    t.call(() => gateway.hold(), undefined, HOLD_AT - 0.001);
+    // The world darkens while he raises the sword, so the lightning blazes
+    // against it, then lifts as the city lights up.
+    t.to(ch, { gloom: 0.55, duration: 1.8, ease: "power1.inOut" }, 3.9);
+    t.to(ch, { gloom: 0, duration: 4.5, ease: "sine.inOut" }, IMPACT + 0.8);
+    t.fromTo(ch, { shake: 1 }, { shake: 0, duration: 2.1, ease: "power3.out", immediateRender: false }, IMPACT);
     t.call(() => gateway.complete(), undefined, COMPLETE_AT);
     tl.current = t;
     return () => {
@@ -197,7 +229,8 @@ export function GatewayScene() {
       <Platform />
       <Motes />
       <Sentinel />
-      <Artifact />
+      <SwordKey />
+      <Lightning />
       <Gate />
       <Bridge />
       <City />

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useFrame } from "@react-three/fiber";
 import { Component, Suspense, useMemo, useRef, type ReactNode } from "react";
@@ -6,7 +6,8 @@ import * as THREE from "three";
 import { Glow } from "./Glow";
 import { SentinelModel } from "./SentinelModel";
 import { irisTexture } from "./textures";
-import { artifactPosition, ease, glance } from "./motion";
+import { SENTINEL_K, SENTINEL_ORIGIN, SWORD_HILT, ease, glance, swordLift } from "./motion";
+import { ProceduralSword } from "./SwordKey";
 import { COLORS, clamp01, sub, useScene } from "./state";
 
 /**
@@ -24,9 +25,9 @@ const UP = new THREE.Vector3(0, 1, 0);
 const sides = [-1, 1] as const;
 
 /** Where the figure stands; the same origin as the rigged model. */
-const ORIGIN = new THREE.Vector3(0, 0.3, -2.2);
-/** Each hand relative to the Artifact's centre (right-hand side; x mirrors). */
-const HAND_HOLD = new THREE.Vector3(0.84, -0.34, -0.06);
+const ORIGIN = SENTINEL_ORIGIN;
+/** Each hand relative to the hilt of the planted sword (right-hand side; x mirrors). */
+const HAND_HOLD = new THREE.Vector3(0.08, 0, 0.14);
 const SHOULDER = new THREE.Vector3(1.78, 6.28, 0);
 const UPPER_LEN = 1.55;
 const FORE_LEN = 1.5;
@@ -202,12 +203,12 @@ export function ProceduralSentinel() {
     mats.energy.opacity = ch.crystal * (0.62 + 0.3 * Math.sin(t * 1.7));
     mats.reactor.opacity = clamp01(ch.crystal * (0.75 + 0.2 * Math.sin(t * 2.1)) + Math.sin(Math.PI * ch.pulse) * 0.5);
 
-    // Arms: two-bone IK from shoulder to a hand beside the Artifact, wherever
-    // the Artifact is this frame.
+    // Arms: two-bone IK from shoulder to the hilt of the planted sword.
     for (let i = 0; i < 2; i++) {
       const s = sides[i]!;
       const a = arm.current[i]!;
-      artifactPosition(ch, t, tmp.target).sub(ORIGIN);
+      tmp.target.copy(SWORD_HILT).sub(ORIGIN);
+      tmp.target.y += swordLift(ch) * SENTINEL_K + (i === 0 ? 0 : 0.35);
       tmp.target.x += HAND_HOLD.x * s;
       tmp.target.y += HAND_HOLD.y;
       tmp.target.z += HAND_HOLD.z;
@@ -233,6 +234,7 @@ export function ProceduralSentinel() {
 
   return (
     <group position={ORIGIN}>
+      <ProceduralSword />
       {/* ---------------------------------------------------------- legs */}
       {sides.map((s) => (
         <group key={`leg${s}`}>
