@@ -76,7 +76,9 @@ export function WorldPanel({ focus, topic, children }: { focus: WorldFocus; topi
   const close = useCallback(() => router.push("/explore", { scroll: false }), [router]);
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" && !(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) close();
+      // A modal inside the page (a photograph viewer) closes first.
+      if (e.key !== "Escape" || e.defaultPrevented || document.querySelector("dialog[open]")) return;
+      if (!(e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement)) close();
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);

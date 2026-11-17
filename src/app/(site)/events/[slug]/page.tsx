@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
 import { EVENT_CATEGORY, registrationState } from "@/components/content/Cards";
+import { PhotoGrid, type Photo } from "@/components/content/PhotoGrid";
 import { RegisterPanel, type MyRegistration } from "@/components/content/RegisterPanel";
 import { SourceNotice } from "@/components/district/District";
 import { PageHeader } from "@/components/sections/PageHeader";
@@ -11,6 +12,7 @@ import { Container } from "@/components/ui/Container";
 import { Notice } from "@/components/ui/States";
 import { getTerritory } from "@/config/territories";
 import { getViewer } from "@/lib/auth/session";
+import { toPhoto } from "@/lib/data/gallery";
 import { getEvent, listMedia, registrationCount } from "@/lib/data/public";
 import { pageMetadata } from "@/lib/seo";
 import { mediaUrl } from "@/lib/supabase/env";
@@ -42,7 +44,11 @@ export default async function Page({ params }: Props) {
   const state = registrationState(event);
   const banner = mediaUrl(event.banner_path);
   const poster = mediaUrl(event.poster_path);
-  const photos = media.items.filter((m) => m.event_id === event.id).slice(0, 12);
+  const photos = media.items
+    .filter((m) => m.event_id === event.id)
+    .slice(0, 24)
+    .map(toPhoto)
+    .filter((p): p is Photo => p !== null);
   const seatsLeft = event.capacity && count !== null ? Math.max(0, event.capacity - count) : null;
 
   const details = [
@@ -81,32 +87,11 @@ export default async function Page({ params }: Props) {
             )}
 
             {photos.length > 0 && (
-              <section aria-labelledby="event-photos" className="mt-14">
-                <h2 id="event-photos" className="font-display text-xl text-ice">
+              <section id="photographs" aria-labelledby="event-photos" className="mt-14 scroll-mt-24">
+                <h2 id="event-photos" className="mb-5 font-display text-xl text-ice">
                   From the event
                 </h2>
-                <ul className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
-                  {photos.map((m) => {
-                    const src = mediaUrl(m.storage_path);
-                    return (
-                      src && (
-                        <li key={m.id}>
-                          <figure>
-                            <Image
-                              src={src}
-                              alt={m.alt || m.caption}
-                              width={480}
-                              height={360}
-                              unoptimized
-                              className="aspect-[4/3] w-full border border-line object-cover"
-                            />
-                            {m.caption && <figcaption className="mt-1.5 text-xs text-muted">{m.caption}</figcaption>}
-                          </figure>
-                        </li>
-                      )
-                    );
-                  })}
-                </ul>
+                <PhotoGrid photos={photos} label={`Photographs from ${event.title}`} />
                 <Button href="/gallery" variant="ghost" size="sm" className="mt-4">
                   Open the gallery →
                 </Button>
