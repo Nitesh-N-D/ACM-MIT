@@ -16,6 +16,7 @@ import { Ground } from "@/components/world/CityBlocks";
 import { Fabric } from "@/components/world/Fabric";
 import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
+import { Pedestrians } from "@/components/world/Pedestrians";
 import { Surroundings } from "@/components/world/Surroundings";
 import { isTerritory } from "../destinations";
 import { explore } from "../store";
@@ -176,6 +177,7 @@ export function ExploreScene({ activity, reducedMotion }: { activity: Activity; 
       <Bridge />
       <Fabric detail={tier.detail} arrival environment={tier.environment} level={() => arrive.current} />
       <Surroundings level={() => arrive.current} reducedMotion={reducedMotion} />
+      <Pedestrians count={tier.people} reducedMotion={reducedMotion} level={() => arrive.current} />
       <Avenues focus={focus} arrive={arrive} />
       {territories.map((t, i) => (
         <District key={t.id} id={t.id} index={i} focus={focus} arrive={arrive} activity={activity[t.id] ?? 0} />

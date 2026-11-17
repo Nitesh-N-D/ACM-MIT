@@ -19,12 +19,14 @@ export type TierSettings = {
   environment: boolean;
   /** Ambient frame-rate cap after the intro (0 = uncapped). */
   ambientFps: number;
+  /** Most pedestrians in the free-exploration city. */
+  people: number;
 };
 
 export const TIERS: Record<Exclude<Tier, "fallback">, TierSettings> = {
-  high: { dpr: [1, 2], antialias: true, stars: 5000, motes: 520, detail: 2, environment: true, ambientFps: 0 },
-  balanced: { dpr: [1, 1.5], antialias: true, stars: 3000, motes: 300, detail: 2, environment: true, ambientFps: 0 },
-  low: { dpr: [1, 1], antialias: false, stars: 1400, motes: 110, detail: 1, environment: false, ambientFps: 30 },
+  high: { dpr: [1, 2], antialias: true, stars: 5000, motes: 520, detail: 2, environment: true, ambientFps: 0, people: 900 },
+  balanced: { dpr: [1, 1.5], antialias: true, stars: 3000, motes: 300, detail: 2, environment: true, ambientFps: 0, people: 600 },
+  low: { dpr: [1, 1], antialias: false, stars: 1400, motes: 110, detail: 1, environment: false, ambientFps: 30, people: 220 },
 };
 
 export const TIER_LABEL: Record<Tier, string> = {

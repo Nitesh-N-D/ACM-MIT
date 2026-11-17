@@ -28,6 +28,8 @@ declare global {
   interface Window {
     /** Read-only camera state for automated QA. */
     __nexusExploreCam?: Orbit;
+    /** Where the camera is easing towards (QA may pin both to frame a view). */
+    __nexusExploreGoal?: Orbit;
   }
 }
 
@@ -112,8 +114,10 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
 
   useEffect(() => {
     window.__nexusExploreCam = cur.current;
+    window.__nexusExploreGoal = goal.current;
     return () => {
       delete window.__nexusExploreCam;
+      delete window.__nexusExploreGoal;
     };
   }, []);
 
