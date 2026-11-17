@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { Notice } from "@/components/ui/States";
 import { getTerritory, territories, type TerritoryId } from "@/config/territories";
+import { topicsOf } from "@/config/topics";
 import { districtDigests, type DistrictDigest } from "@/lib/data/districts";
 import type { DistrictCopy, Source } from "@/lib/data/types";
 
@@ -84,7 +85,7 @@ export function Reception({ id, digest }: { id: TerritoryId; digest: DistrictDig
   const panel = "nexus-frame p-5 sm:p-6";
   const label = "font-mono text-[0.62rem] tracking-[0.2em] uppercase";
   return (
-    <section id="reception" aria-labelledby="reception-title" className="world-hide scroll-mt-24" style={{ "--accent": t.accent } as CSSProperties}>
+    <section id="reception" aria-labelledby="reception-title" className="scroll-mt-24" style={{ "--accent": t.accent } as CSSProperties}>
       <div className="flex flex-wrap items-center justify-between gap-3 border-b pb-4" style={{ borderBottomColor: `${t.accent}55` }}>
         <div className="flex items-center gap-3">
           <TerritoryGlyph id={id} className="size-9 shrink-0" />
@@ -108,10 +109,20 @@ export function Reception({ id, digest }: { id: TerritoryId; digest: DistrictDig
             Exhibition · What lives in {t.short}
           </p>
           <ol className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {t.topics.map((topic, i) => (
-              <li key={topic} className="border border-line bg-deep/50 px-3 py-2.5">
-                <span className="block font-mono text-[0.6rem] text-dim">{String(i + 1).padStart(2, "0")}</span>
-                <span className="mt-1 block text-sm leading-snug text-silver">{topic}</span>
+            {topicsOf(id).map((topic, i) => (
+              <li key={topic.name}>
+                <Link
+                  href={topic.href}
+                  className="group flex h-full flex-col border border-line bg-deep/50 px-3 py-2.5 transition-colors hover:border-(--accent)/60 hover:bg-deep"
+                >
+                  <span className="flex items-center justify-between font-mono text-[0.6rem] text-dim">
+                    {String(i + 1).padStart(2, "0")}
+                    <span aria-hidden="true" className="transition-colors group-hover:text-(--accent)">
+                      →
+                    </span>
+                  </span>
+                  <span className="mt-1 block text-sm leading-snug text-silver group-hover:text-ice">{topic.name}</span>
+                </Link>
               </li>
             ))}
           </ol>

@@ -33,9 +33,25 @@ export type ExploreState = {
   /** Heritage Archive: the open gallery and the exhibit shown in detail. */
   gallery: HeritageGallery;
   exhibit: string | null;
+  /** The topic hall shown when the focus is a district's hall room. */
+  hall: string | null;
 };
 
-const initial: ExploreState = { mode: "free", focus: "overview", hovered: null, autoRotate: false, travel: 0, tier: null, reducedMotion: false, ready: false, flat: false, travelAz: null, gallery: "global", exhibit: null };
+const initial: ExploreState = {
+  mode: "free",
+  focus: "overview",
+  hovered: null,
+  autoRotate: false,
+  travel: 0,
+  tier: null,
+  reducedMotion: false,
+  ready: false,
+  flat: false,
+  travelAz: null,
+  gallery: "global",
+  exhibit: null,
+  hall: null,
+};
 
 let state = initial;
 const listeners = new Set<() => void>();
@@ -76,6 +92,13 @@ export const explore = {
     // Inside the Archive the camera faces the open gallery's wall.
     const travelAz = id === "archive" ? GALLERY_AZ[state.gallery] : null;
     set({ focus: id, mode: districtOf(id) ? "district" : "free", travel: state.travel + 1, travelAz, exhibit: null });
+  },
+  /** Walks into a topic hall of a district (changing topic inside the hall keeps the camera where it is). */
+  enterHall(id: TerritoryId, slug: string) {
+    const focus = `${id}:hall` as const;
+    if (state.focus === focus) {
+      if (state.hall !== slug) set({ hall: slug });
+    } else set({ focus, hall: slug, mode: "district", travel: state.travel + 1, travelAz: null, exhibit: null });
   },
   /** Cinematic tour advances without leaving cinematic mode. */
   tour(id: FocusId) {

@@ -1,5 +1,5 @@
 import { territories, type TerritoryId } from "@/config/territories";
-import { DISTRICT_POS, GROUND_Y, HERITAGE, INTERIOR_Y } from "@/components/world/layout";
+import { DISTRICT_POS, GROUND_Y, HALL_Y, HERITAGE, INTERIOR_Y } from "@/components/world/layout";
 
 /**
  * Camera destinations of the NEXUS world. Each is an orbit: the camera looks
@@ -10,7 +10,9 @@ import { DISTRICT_POS, GROUND_Y, HERITAGE, INTERIOR_Y } from "@/components/world
 export type PlaceId = "overview" | "sentinel" | "sword" | "gateway" | "arrival" | "bridge" | "heritage" | "archive";
 /** Inside a district's landmark. */
 export type InteriorId = `${TerritoryId}:in`;
-export type FocusId = PlaceId | TerritoryId | InteriorId;
+/** A topic hall of a district (which topic is in the store). */
+export type HallId = `${TerritoryId}:hall`;
+export type FocusId = PlaceId | TerritoryId | InteriorId | HallId;
 
 export type Destination = {
   id: FocusId;
@@ -87,7 +89,6 @@ const DISTRICTS: Destination[] = territories.map((t) => {
   };
 });
 
-
 const INTERIORS: Destination[] = territories.map((t) => {
   const [x, z] = DISTRICT_POS[t.id];
   return {
@@ -106,13 +107,23 @@ const INTERIORS: Destination[] = territories.map((t) => {
   };
 });
 
+/** Topic halls: the same view as a reception, in the hall's own room. */
+const HALL_ROOMS: Destination[] = INTERIORS.map((d) => ({
+  ...d,
+  id: d.id.replace(/:in$/, ":hall") as HallId,
+  label: "Topic hall",
+  hint: "A hall off the reception",
+  target: [d.target[0], d.target[1] - INTERIOR_Y + HALL_Y, d.target[2]],
+  floor: HALL_Y + 0.5,
+}));
+
 /** Destinations offered in the destinations bar (interiors are entered from a district). */
 export const DESTINATIONS: Destination[] = [...PLACES, ...DISTRICTS];
 export const PLACE_IDS = PLACES.map((p) => p.id) as PlaceId[];
 /** Order of the automatic cinematic tour. */
 export const TOUR: FocusId[] = ["overview", "sentinel", "sword", "gateway", "arrival", "bridge", ...territories.map((t) => t.id), "heritage", "archive"];
 
-const BY_ID = new Map([...DESTINATIONS, ...INTERIORS].map((d) => [d.id, d]));
+const BY_ID = new Map([...DESTINATIONS, ...INTERIORS, ...HALL_ROOMS].map((d) => [d.id, d]));
 
 /** Whether `id` names a destination (deep links), interiors included. */
 export function isFocusId(id: string): id is FocusId {
@@ -132,8 +143,13 @@ export function isTerritory(id: FocusId): id is TerritoryId {
   return territories.some((t) => t.id === id);
 }
 
-export function isInterior(id: FocusId): id is InteriorId {
-  return id.endsWith(":in");
+/** Inside a room of a district: its reception or one of its topic halls. */
+export function isInterior(id: FocusId): id is InteriorId | HallId {
+  return id.endsWith(":in") || id.endsWith(":hall");
+}
+
+export function isHall(id: FocusId): id is HallId {
+  return id.endsWith(":hall");
 }
 
 export function interiorOf(id: TerritoryId): InteriorId {
@@ -143,6 +159,6 @@ export function interiorOf(id: TerritoryId): InteriorId {
 /** The district a focus belongs to, outside or in. */
 export function districtOf(id: FocusId): TerritoryId | null {
   if (isTerritory(id)) return id;
-  if (isInterior(id)) return id.slice(0, -3) as TerritoryId;
+  if (isInterior(id)) return id.split(":")[0] as TerritoryId;
   return null;
 }

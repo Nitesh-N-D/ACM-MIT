@@ -4,7 +4,9 @@ import dynamic from "next/dynamic";
 import { Component, useEffect, type ReactNode } from "react";
 import type { HeritageEntry } from "@/config/heritage";
 import type { TerritoryId } from "@/config/territories";
+import { setHallBoards } from "@/components/world/hallBoards";
 import type { Digests } from "@/lib/data/districts";
+import type { HallBoards } from "@/lib/data/halls";
 import { CityMap } from "./CityMap";
 import { ExploreHud } from "./ExploreHud";
 import { isFocusId, isHeritage, isTerritory } from "./destinations";
@@ -42,7 +44,21 @@ const NO_HERITAGE: HeritageEntry[] = [];
  * The navigable NEXUS world. The 2D map is the baseline (and what renders
  * on the server); the WebGL world replaces it when the device can run it.
  */
-export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE, digests }: { activity?: Activity; heritage?: HeritageEntry[]; digests?: Digests }) {
+export function ExploreStage({
+  activity = NO_ACTIVITY,
+  heritage = NO_HERITAGE,
+  digests,
+  boards,
+}: {
+  activity?: Activity;
+  heritage?: HeritageEntry[];
+  digests?: Digests;
+  boards?: HallBoards;
+}) {
+  // The topic halls' boards, for the rooms inside the scene.
+  useEffect(() => {
+    if (boards) setHallBoards(boards);
+  }, [boards]);
   const tier = useExplore((s) => s.tier);
   const ready = useExplore((s) => s.ready);
   const flat = useExplore((s) => s.flat);
@@ -72,14 +88,16 @@ export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE, d
   const view = show3d ? (ready ? "3d" : "loading") : "map";
 
   return (
-    <section
-      aria-label="NEXUS world"
-      data-explore-stage={view}
-      className="relative h-[calc(100svh-4rem)] min-h-[36rem] overflow-hidden border-b border-line bg-void"
-    >
+    <section aria-label="NEXUS world" data-explore-stage={view} className="relative h-[calc(100svh-4rem)] min-h-[36rem] overflow-hidden border-b border-line bg-void">
       {view !== "3d" && (
         <div className="absolute inset-0 flex items-center justify-center p-4 pt-16 pb-28 sm:p-10 sm:pt-20 lg:pr-[24rem]">
-          <CityMap selected={selected} onSelect={(id) => explore.go(id)} heritageOn={isHeritage(focus)} onHeritage={() => explore.go("heritage")} className="max-h-full w-full max-w-4xl" />
+          <CityMap
+            selected={selected}
+            onSelect={(id) => explore.go(id)}
+            heritageOn={isHeritage(focus)}
+            onHeritage={() => explore.go("heritage")}
+            className="max-h-full w-full max-w-4xl"
+          />
         </div>
       )}
       {show3d && (
@@ -89,7 +107,7 @@ export function ExploreStage({ activity = NO_ACTIVITY, heritage = NO_HERITAGE, d
           </CanvasBoundary>
         </div>
       )}
-      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} heritage={heritage} digests={digests} />
+      <ExploreHud view={view} canUse3d={tier !== null && tier !== "fallback"} heritage={heritage} digests={digests} boards={boards} />
     </section>
   );
 }

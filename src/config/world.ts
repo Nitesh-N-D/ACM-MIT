@@ -1,4 +1,5 @@
 import type { TerritoryId } from "./territories";
+import { HALL_BASE, getHall } from "./topics";
 
 /**
  * How NEXUS is shown to a visitor.
@@ -14,8 +15,8 @@ export type ViewMode = "3d" | "2d";
 export const VIEW_COOKIE = "nexus-view";
 export const VIEW_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 
-/** Where the camera goes when a page opens in the world. */
-export type WorldFocus = `${TerritoryId}:in` | "archive";
+/** Where the camera goes when a page opens in the world: a reception, a topic hall, or the Archive. */
+export type WorldFocus = `${TerritoryId}:in` | `${TerritoryId}:hall` | "archive";
 
 /**
  * Pages that open inside the 3D world, and the interior they open in.
@@ -23,26 +24,41 @@ export type WorldFocus = `${TerritoryId}:in` | "archive";
  * the admin centre stay plain pages: they are tools, not places.
  */
 const ROUTES: { path: string; focus: WorldFocus; nested?: boolean }[] = [
-  { path: "/about", focus: "core:in" },
-  { path: "/announcements", focus: "core:in" },
+  { path: "/about", focus: "core:in", nested: true },
+  { path: "/announcements", focus: "core:in", nested: true },
   { path: "/membership", focus: "core:in" },
   { path: "/contact", focus: "core:in" },
   { path: "/search", focus: "core:in" },
-  { path: "/realms/intelligence", focus: "intelligence:in" },
+  { path: "/realms/intelligence", focus: "intelligence:in", nested: true },
   { path: "/learning", focus: "intelligence:in" },
-  { path: "/realms/technology", focus: "frontier:in" },
+  { path: "/realms/technology", focus: "frontier:in", nested: true },
   { path: "/events", focus: "colosseum:in", nested: true },
   { path: "/vault", focus: "vault:in", nested: true },
   { path: "/team", focus: "sanctuary:in" },
   { path: "/alumni", focus: "sanctuary:in" },
   { path: "/achievements", focus: "sanctuary:in" },
-  { path: "/gallery", focus: "sanctuary:in" },
+  { path: "/gallery", focus: "sanctuary:in", nested: true },
   { path: "/heritage", focus: "archive" },
 ];
 
+const trim = (pathname: string) => (pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname);
+
+/** The topic hall a path is (`/events/topics/hackathons` → colosseum / hackathons), if any. */
+export function worldHall(pathname: string): { id: TerritoryId; slug: string } | null {
+  const p = trim(pathname);
+  for (const [id, base] of Object.entries(HALL_BASE) as [TerritoryId, string][]) {
+    if (!p.startsWith(base + "/")) continue;
+    const slug = p.slice(base.length + 1);
+    if (!slug.includes("/") && getHall(id, slug)) return { id, slug };
+  }
+  return null;
+}
+
 /** The interior a path opens in, or null when the path is a plain page. */
 export function worldFocus(pathname: string): WorldFocus | null {
-  const p = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  const hall = worldHall(pathname);
+  if (hall) return `${hall.id}:hall`;
+  const p = trim(pathname);
   for (const r of ROUTES) {
     if (p === r.path) return r.focus;
     // One level of detail pages only (/events/<slug>), never deeper.

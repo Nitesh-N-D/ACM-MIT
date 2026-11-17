@@ -62,6 +62,8 @@ export const HERITAGE = { x: -17, z: -96, r: 12 } as const;
  * nothing is loaded until a visitor steps inside.
  */
 export const INTERIOR_Y = GROUND_Y - 60;
+/** Topic halls: rooms of the same size, further below (a hall is entered from its reception). */
+export const HALL_Y = INTERIOR_Y - 30;
 /** Interior room: width (x), depth (z), height; the entrance is on the +z wall. */
 export const ROOM = { w: 18, d: 14, h: 6.5 } as const;
 

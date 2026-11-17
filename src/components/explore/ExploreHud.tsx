@@ -1,12 +1,15 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import type { HeritageEntry } from "@/config/heritage";
 import { getTerritory, territories } from "@/config/territories";
+import { getHall, hallHref, topicsOf } from "@/config/topics";
 import type { Digests } from "@/lib/data/districts";
-import { DESTINATIONS, PLACE_IDS, destination, districtOf, interiorOf, isHeritage, isInterior, isTerritory, type FocusId } from "./destinations";
+import type { HallBoards } from "@/lib/data/halls";
+import { DESTINATIONS, PLACE_IDS, destination, districtOf, interiorOf, isHall, isHeritage, isInterior, isTerritory, type FocusId } from "./destinations";
 import { HeritagePanel } from "./HeritagePanel";
 import { cameraInput, explore, useExplore, type ExploreMode } from "./store";
 
@@ -29,7 +32,19 @@ type View = "3d" | "loading" | "map";
 const MAP_PLACES = DESTINATIONS.filter((d) => d.id === "heritage" || !PLACE_IDS.includes(d.id as never));
 
 /** Everything the visitor can do in the world is also a real button here. */
-export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; canUse3d: boolean; heritage: HeritageEntry[]; digests?: Digests }) {
+export function ExploreHud({
+  view,
+  canUse3d,
+  heritage,
+  digests,
+  boards,
+}: {
+  view: View;
+  canUse3d: boolean;
+  heritage: HeritageEntry[];
+  digests?: Digests;
+  boards?: HallBoards;
+}) {
   const mode = useExplore((s) => s.mode);
   const focus = useExplore((s) => s.focus);
   const autoRotate = useExplore((s) => s.autoRotate);
@@ -41,11 +56,17 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
   const territory = district ? getTerritory(district) : null;
   const indoors = is3d && isInterior(focus);
   const place = destination(focus);
-  const digest = territory && digests ? digests[territory.id] : null;
+  const hallSlug = useExplore((s) => s.hall);
+  const hall = territory && indoors && isHall(focus) && hallSlug ? getHall(territory.id, hallSlug) : null;
+  const board = hall && territory ? boards?.[`${territory.id}/${hall.slug}`] : undefined;
+  const digest = hall ? (board ? { label: "On the boards", source: board.source, items: board.items } : null) : territory && digests ? digests[territory.id] : null;
+  // A hall's page shows its own card over the world while it is open.
+  const pageOpen = usePathname() !== "/explore";
 
   // Stepping through a door is a camera cut; a short fade from black covers it.
-  const [veil, setVeil] = useState({ indoors, n: 0 });
-  if (veil.indoors !== indoors) setVeil({ indoors, n: veil.n + 1 });
+  const room = indoors ? focus : null;
+  const [veil, setVeil] = useState({ room, n: 0 });
+  if (veil.room !== room) setVeil({ room, n: veil.n + 1 });
 
   return (
     <>
@@ -58,7 +79,14 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
         {is3d && (
           <div role="group" aria-label="Camera mode" className="flex gap-1">
             {MODES.map((m) => (
-              <button key={m.id} type="button" title={m.hint} aria-pressed={mode === m.id} onClick={() => explore.setMode(m.id)} className={`${chip} ${mode === m.id ? chipOn : chipOff}`}>
+              <button
+                key={m.id}
+                type="button"
+                title={m.hint}
+                aria-pressed={mode === m.id}
+                onClick={() => explore.setMode(m.id)}
+                className={`${chip} ${mode === m.id ? chipOn : chipOff}`}
+              >
                 {m.label}
               </button>
             ))}
@@ -70,9 +98,7 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
           </button>
         )}
         {view === "loading" && <span className="font-mono text-[0.62rem] tracking-[0.18em] text-cyan uppercase">Loading 3D world…</span>}
-        {!canUse3d && view === "map" && (
-          <span className="font-mono text-[0.62rem] tracking-[0.16em] text-mist uppercase">2D map · 3D is unavailable on this device</span>
-        )}
+        {!canUse3d && view === "map" && <span className="font-mono text-[0.62rem] tracking-[0.16em] text-mist uppercase">2D map · 3D is unavailable on this device</span>}
       </div>
 
       {/* Camera controls */}
@@ -91,7 +117,14 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
             ⟳
           </button>
           {!reducedMotion && (
-            <button type="button" aria-label="Auto-rotate" aria-pressed={autoRotate} title="Auto-rotate" className={`${iconBtn} ${autoRotate ? "border-cyan text-cyan" : ""}`} onClick={() => explore.toggleAutoRotate()}>
+            <button
+              type="button"
+              aria-label="Auto-rotate"
+              aria-pressed={autoRotate}
+              title="Auto-rotate"
+              className={`${iconBtn} ${autoRotate ? "border-cyan text-cyan" : ""}`}
+              onClick={() => explore.toggleAutoRotate()}
+            >
               ∞
             </button>
           )}
@@ -114,35 +147,44 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
             <li>Select a landmark, or a destination below, to travel.</li>
             <li>Every control is also a button, and the 2D map is always available.</li>
           </ul>
-          <button type="button" onClick={() => setHelp(false)} className="mt-2 font-mono text-[0.62rem] tracking-[0.16em] text-ice uppercase underline underline-offset-4 hover:text-cyan">
+          <button
+            type="button"
+            onClick={() => setHelp(false)}
+            className="mt-2 font-mono text-[0.62rem] tracking-[0.16em] text-ice uppercase underline underline-offset-4 hover:text-cyan"
+          >
             Got it
           </button>
         </div>
       )}
 
       {/* District panel */}
-      {territory && (
+      {territory && !(hall && pageOpen) && (
         <aside
-          aria-label={territory.name}
+          aria-label={hall ? `${hall.name}, a topic hall of ${territory.short}` : territory.name}
           className="absolute inset-x-3 bottom-16 z-20 max-h-[45%] overflow-y-auto border border-line bg-void/90 p-4 backdrop-blur-sm sm:bottom-20 lg:inset-x-auto lg:top-20 lg:right-16 lg:bottom-auto lg:max-h-[70%] lg:w-80"
           style={{ borderTopColor: territory.accent }}
         >
           <p className="font-mono text-[0.62rem] tracking-[0.2em] uppercase" style={{ color: territory.accent }}>
-            {territory.code} · {indoors ? "Inside · Reception" : territory.purpose}
+            {territory.code} · {hall ? `Topic hall · ${territory.short}` : indoors ? "Inside · Reception" : territory.purpose}
           </p>
-          <h2 className="mt-2 font-display text-lg tracking-[0.08em] text-ice uppercase">{territory.name}</h2>
-          <p className="mt-2 text-sm leading-relaxed text-silver">{territory.description}</p>
+          <h2 className="mt-2 font-display text-lg tracking-[0.08em] text-ice uppercase">{hall?.name ?? territory.name}</h2>
+          <p className="mt-2 text-sm leading-relaxed text-silver">{hall?.blurb ?? territory.description}</p>
           <ul className="mt-3 flex flex-wrap gap-1.5">
-            {territory.topics.map((topic) => (
-              <li key={topic} className="border border-line px-2 py-0.5 font-mono text-[0.6rem] tracking-[0.12em] text-mist uppercase">
-                {topic}
+            {topicsOf(territory.id).map((topic) => (
+              <li key={topic.name}>
+                <Link
+                  href={topic.href}
+                  className="block border border-line px-2 py-0.5 font-mono text-[0.6rem] tracking-[0.12em] text-mist uppercase transition-colors hover:border-line-strong hover:text-ice"
+                >
+                  {topic.name}
+                </Link>
               </li>
             ))}
           </ul>
           {digest && (
             <div className="mt-4 border-t border-line pt-3">
               <p className="font-mono text-[0.6rem] tracking-[0.2em] text-dim uppercase">
-                {indoors ? "On the displays" : digest.label}
+                {hall ? digest.label : indoors ? "On the displays" : digest.label}
                 {digest.source === "sample" && " · sample data"}
               </p>
               {digest.items.length > 0 ? (
@@ -161,7 +203,9 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
                   ))}
                 </ul>
               ) : (
-                <p className="mt-2 text-xs leading-relaxed text-muted">{digest.source === "error" ? "Content could not be loaded right now." : "Nothing has been published here yet."}</p>
+                <p className="mt-2 text-xs leading-relaxed text-muted">
+                  {digest.source === "error" ? "Content could not be loaded right now." : "Nothing has been published here yet."}
+                </p>
               )}
             </div>
           )}
@@ -171,14 +215,27 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
                 Step inside
               </Button>
             )}
-            {indoors && (
-              <Button size="sm" onClick={() => explore.go(territory.id)}>
-                Step outside
-              </Button>
+            {hall ? (
+              <>
+                <Button href={hallHref(territory.id, hall.slug)} size="sm">
+                  Open the hall page
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => explore.go(interiorOf(territory.id))}>
+                  Back to reception
+                </Button>
+              </>
+            ) : (
+              <>
+                {indoors && (
+                  <Button size="sm" onClick={() => explore.go(territory.id)}>
+                    Step outside
+                  </Button>
+                )}
+                <Button href={territory.href} variant={is3d ? "ghost" : "primary"} size="sm">
+                  {is3d ? "Open pages here" : "Enter district"}
+                </Button>
+              </>
             )}
-            <Button href={territory.href} variant={is3d ? "ghost" : "primary"} size="sm">
-              {is3d ? "Open pages here" : "Enter district"}
-            </Button>
             <Button variant="ghost" size="sm" onClick={() => explore.reset()}>
               Back to overview
             </Button>
@@ -198,7 +255,14 @@ export function ExploreHud({ view, canUse3d, heritage, digests }: { view: View; 
             const accent = isTerritory(d.id) ? territories.find((t) => t.id === d.id)?.accent : d.id === "heritage" ? "#e8c46a" : undefined;
             return (
               <li key={d.id} className="shrink-0">
-                <button type="button" title={d.hint} aria-pressed={on} data-destination={d.id} onClick={() => explore.go(d.id as FocusId)} className={`${chip} ${on ? chipOn : chipOff}`}>
+                <button
+                  type="button"
+                  title={d.hint}
+                  aria-pressed={on}
+                  data-destination={d.id}
+                  onClick={() => explore.go(d.id as FocusId)}
+                  className={`${chip} ${on ? chipOn : chipOff}`}
+                >
                   {accent && <span aria-hidden="true" className="mr-1.5 inline-block size-1.5 rotate-45" style={{ background: accent }} />}
                   {d.label}
                 </button>

@@ -45,7 +45,8 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
   const goal = useRef<Orbit>({ x: 0, y: 6, z: -50, r: 150, az: 0, pol: 1.0 });
   const limits = useRef({ min: 60, max: 240 });
   const seen = useRef(-1);
-  const inside = useRef(false);
+  /** The room the camera is in (a reception or a hall), or null outdoors. */
+  const inside = useRef<string | null>(null);
   const floor = useRef(GROUND_Y + 1.2);
   const drag = useRef({ active: false, idle: 0, tour: 0 });
 
@@ -146,8 +147,10 @@ export function CameraRig({ reducedMotion }: { reducedMotion: boolean }) {
       limits.current = { min: dest.min, max: dest.max };
       floor.current = dest.floor ?? GROUND_Y + 1.2;
       d.tour = 0;
-      if (isInterior(s.focus) !== inside.current) {
-        inside.current = !inside.current;
+      // Stepping through a door, or from one room to another, is a cut, not a flight.
+      const room = isInterior(s.focus) ? s.focus : null;
+      if (room !== inside.current) {
+        inside.current = room;
         Object.assign(c, g);
       }
     }

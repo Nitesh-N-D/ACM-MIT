@@ -1,7 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect } from "react";
 import { safeWorldPath, worldFocus, worldUrl } from "@/config/world";
 import { readViewMode, writeViewCookie } from "@/lib/view-mode";
 
@@ -28,12 +28,29 @@ export function WorldMount() {
 
 /** `/explore?open=<path>` (set by the proxy or the link router): open that page in the world. */
 export function OpenFromQuery() {
+  return (
+    <Suspense fallback={null}>
+      <OpenFromSearch />
+    </Suspense>
+  );
+}
+
+// Read from the router, not window.location: on a client navigation to
+// /explore?open=… the address bar may not have changed yet when effects run.
+function OpenFromSearch() {
   const router = useRouter();
+  const open = safeWorldPath(useSearchParams().get("open"));
   useEffect(() => {
-    const open = safeWorldPath(new URLSearchParams(window.location.search).get("open"));
     if (open) router.replace(open, { scroll: false });
-  }, [router]);
+  }, [open, router]);
   return null;
+}
+
+const OPEN_EVENT = "nexus:open-page";
+
+/** Opens a website page from inside the 3D scene (exhibition screens and the like). */
+export function openWorldPage(href: string) {
+  window.dispatchEvent(new CustomEvent<string>(OPEN_EVENT, { detail: href }));
 }
 
 /** One click listener for the whole site, mounted in the public layout. */
@@ -64,8 +81,17 @@ export function WorldLinkRouter() {
       }
       if (!worldMounted && worldFocus(url.pathname)) go(worldUrl(url.pathname + url.search + url.hash));
     };
+    const onOpen = (e: Event) => {
+      const href = (e as CustomEvent<unknown>).detail;
+      if (typeof href !== "string" || !href.startsWith("/") || href.startsWith("//")) return;
+      router.push(worldMounted || !worldFocus(href.split(/[?#]/)[0]!) ? href : worldUrl(href), { scroll: false });
+    };
     document.addEventListener("click", onClick, true);
-    return () => document.removeEventListener("click", onClick, true);
+    window.addEventListener(OPEN_EVENT, onOpen);
+    return () => {
+      document.removeEventListener("click", onClick, true);
+      window.removeEventListener(OPEN_EVENT, onOpen);
+    };
   }, [router]);
   return null;
 }

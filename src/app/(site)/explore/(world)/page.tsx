@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Container } from "@/components/ui/Container";
 import { pages } from "@/config/pages";
 import { digestActivity, districtDigests } from "@/lib/data/districts";
+import { hallBoards } from "@/lib/data/halls";
 import { listHeritage } from "@/lib/data/public";
 
 /** Re-read published heritage entries at most every five minutes. */
@@ -14,12 +15,12 @@ export const revalidate = 300;
 export const metadata: Metadata = { title: pages.explore.title, description: pages.explore.description };
 
 export default async function Page() {
-  const [{ items: heritage }, digests] = await Promise.all([listHeritage(), districtDigests()]);
+  const [{ items: heritage }, digests, boards] = await Promise.all([listHeritage(), districtDigests(), hallBoards()]);
   return (
     <>
       <h1 className="sr-only">{pages.explore.title}</h1>
       <OpenFromQuery />
-      <ExploreStage heritage={heritage} digests={digests} activity={digestActivity(digests)} />
+      <ExploreStage heritage={heritage} digests={digests} boards={boards} activity={digestActivity(digests)} />
       <Container className="py-14">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div>
