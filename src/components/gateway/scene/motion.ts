@@ -42,3 +42,12 @@ export function glance(t: number) {
   const held = ease(clamp01(u / 0.1)) * (1 - ease(clamp01((u - 0.3) / 0.12)));
   return held * (n % 2 === 0 ? 1 : -1);
 }
+
+/** Seconds between the Sentinel's friendly nods, out of step with the glances. */
+const NOD_EVERY = 9.5;
+
+/** 0 most of the time; a single soft dip and return, like a nod of welcome. */
+export function nod(t: number) {
+  const u = (t + 4) / NOD_EVERY - Math.floor((t + 4) / NOD_EVERY);
+  return u < 0.16 ? Math.sin((u / 0.16) * Math.PI) ** 2 : 0;
+}

@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { clone as cloneSkinned } from "three/examples/jsm/utils/SkeletonUtils.js";
 import { Glow } from "./Glow";
-import { artifactPosition, ease, glance } from "./motion";
+import { artifactPosition, ease, glance, nod } from "./motion";
 import { COLORS, clamp01, sub, useScene } from "./state";
 
 /**
@@ -52,6 +52,52 @@ const OWNED = /^(Head|neck|(Left|Right)(Arm|ForeArm|Hand))\./;
 const IDLE_AMOUNT = 0.4;
 /** Eyes relative to the head joint, in scene units of the bind pose. */
 const EYE_OFFSET = new THREE.Vector3(0, 0.41, 0.43);
+
+/**
+ * A warm smile. The model has no face rig (no blend shapes, no jaw bone), so
+ * the expression is sculpted in the vertex shader: in bind-pose model space,
+ * before skinning, the mouth corners rise and draw back, the cheeks lift and
+ * round, the lower lids rise and the brows relax. Because it happens before
+ * skinning, the face follows every head movement. Coordinates are the face
+ * of public/models/sentinel.glb (metres, figure 1.9 m tall); the mouth centre
+ * sits at x 0.02, y 1.684.
+ */
+const SMILE_GLSL = /* glsl */ `
+{
+  vec3 pp = position;
+  float front = smoothstep(0.11, 0.17, pp.z) * smoothstep(1.6, 1.64, pp.y) * (1.0 - smoothstep(1.8, 1.84, pp.y));
+  float dx = pp.x - 0.02;
+  float ax = abs(dx);
+  // Mouth: corners up and slightly back and outward, centre almost still.
+  float lipBand = exp(-pow((pp.y - 1.684) / 0.026, 2.0)) * (1.0 - smoothstep(0.05, 0.08, ax));
+  float curve = pow(smoothstep(0.0, 0.046, ax), 1.8);
+  vec3 d = vec3(sign(dx) * 0.005 * curve, 0.016 * curve, -0.004 * curve) * lipBand;
+  // Lower lip and chin follow a little, so the mouth widens rather than tears.
+  float chin = exp(-pow((pp.y - 1.662) / 0.02, 2.0)) * (1.0 - smoothstep(0.03, 0.07, ax));
+  d.y += 0.004 * chin;
+  // Cheeks lift and round.
+  float cheek = exp(-(pow((ax - 0.055) / 0.025, 2.0) + pow((pp.y - 1.712) / 0.02, 2.0)));
+  d += vec3(sign(dx) * 0.002, 0.007, 0.004) * cheek;
+  // Brows relax: lift a touch, inner ends most.
+  float brow = exp(-pow((pp.y - 1.765) / 0.014, 2.0)) * (1.0 - smoothstep(0.045, 0.08, ax));
+  d.y += 0.005 * brow;
+  // Lower lids rise a little: the eyes smile too.
+  float lid = exp(-(pow((ax - 0.042) / 0.02, 2.0) + pow((pp.y - 1.752) / 0.008, 2.0)));
+  d.y += 0.003 * lid;
+  transformed += d * uSmile * front;
+}
+`;
+
+function addSmile(material: THREE.MeshStandardMaterial, smile: { value: number }) {
+  material.onBeforeCompile = (shader) => {
+    shader.uniforms.uSmile = smile;
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nuniform float uSmile;")
+      .replace("#include <begin_vertex>", `#include <begin_vertex>
+${SMILE_GLSL}`);
+  };
+  material.customProgramCacheKey = () => "sentinel-smile";
+}
 
 type Arm = {
   upper: THREE.Bone;
@@ -175,6 +221,7 @@ export function SentinelModel() {
     // reliable before its skeleton has been updated.
     const box = new THREE.Box3();
     const materials: THREE.Material[] = [];
+    const smile = { value: 0 };
     root.traverse((o) => {
       const mesh = o as THREE.SkinnedMesh;
       if (!mesh.isMesh) return;
@@ -184,6 +231,7 @@ export function SentinelModel() {
       mesh.frustumCulled = false;
       const m = (mesh.material as THREE.MeshStandardMaterial).clone();
       m.envMapIntensity = 1.15;
+      addSmile(m, smile);
       mesh.material = m;
       materials.push(m);
     });
@@ -214,6 +262,7 @@ export function SentinelModel() {
       scale,
       minY: box.min.y,
       materials,
+      smile,
       arms,
       mixer: new THREE.AnimationMixer(root),
       idle: source ? calmIdle(source) : null,
@@ -238,9 +287,20 @@ export function SentinelModel() {
     };
   }, [rig]);
 
+  // A warm key light on the face only: the city and the Artifact light him in
+  // cold cyan from below, which reads as stern; this lets the smile show.
+  const faceLight = useMemo(() => {
+    const l = new THREE.SpotLight("#ffd9b8", 0, 14, 0.3, 0.9, 2);
+    l.position.set(0.6, 10.8, 5.4);
+    l.target.position.set(0, 7.5, 0.4);
+    return l;
+  }, []);
+  useEffect(() => () => faceLight.dispose(), [faceLight]);
+
   useFrame(({ clock }, dt) => {
     const t = clock.elapsedTime;
     const wake = ease(clamp01(ch.visor));
+    faceLight.intensity = 46 * wake;
     const lift = ease(clamp01(ch.lift));
 
     // Body: the calmed idle, a slow breath; slower still while dormant.
@@ -250,8 +310,16 @@ export function SentinelModel() {
     // person's: the torso may breathe underneath it, the gaze does not swim.
     // On top of that: bowed while dormant, raised on waking, and now and then
     // an unhurried glance to one side.
-    const pitch = 0.4 * (1 - wake) + 0.04 * wake - 0.07 * lift;
+    // Awake, he smiles, carries his head with a slight, friendly tilt, and
+    // every so often gives a small nod of welcome that deepens the smile.
+    const welcome = nod(t) * wake;
+    const pitch = 0.4 * (1 - wake) + 0.04 * wake - 0.07 * lift + 0.07 * welcome;
     const yaw = glance(t) * 0.07 * wake;
+    const roll = 0.045 * wake;
+    // The scene views him from below and in cool light, which flattens the
+    // expression, so the awake smile runs a little above the sculpted 1.0.
+    const smileTarget = 0.35 + 0.9 * wake + 0.1 * welcome;
+    rig.smile.value += (smileTarget - rig.smile.value) * Math.min(1, dt * 3);
     rig.root.getWorldQuaternion(q.root);
     q.rootInv.copy(q.root).invert();
     if (rig.neck) {
@@ -261,13 +329,13 @@ export function SentinelModel() {
       q.world.copy(q.parent).multiply(rest);
       q.level.copy(q.root).multiply(model);
       q.world.slerp(q.level, 0.5);
-      q.offset.setFromEuler(euler.set(pitch * 0.4, yaw * 0.4, 0, "YXZ"));
+      q.offset.setFromEuler(euler.set(pitch * 0.4, yaw * 0.4, roll * 0.4, "YXZ"));
       q.world.premultiply(q.delta.copy(q.root).multiply(q.offset).multiply(q.rootInv));
       bone.quaternion.copy(q.parent.invert()).multiply(q.world);
     }
     if (rig.head) {
       const { bone, model } = rig.head;
-      q.offset.setFromEuler(euler.set(pitch, yaw, 0, "YXZ"));
+      q.offset.setFromEuler(euler.set(pitch, yaw, roll, "YXZ"));
       q.world.copy(q.root).multiply(q.offset).multiply(model);
       bone.parent!.getWorldQuaternion(q.parent);
       bone.quaternion.copy(q.parent.invert()).multiply(q.world);
@@ -323,10 +391,12 @@ export function SentinelModel() {
 
   return (
     <group ref={group} position={[0, 0.3, -2.2]}>
+      <primitive object={faceLight} />
+      <primitive object={faceLight.target} />
       <primitive object={rig.root} scale={rig.scale} position={[0, -rig.minY * rig.scale, 0]} />
       {/* Energy response: eyes and chest answer the artifact. */}
       <group ref={eyes} position={[0, 7.72, 0.62]}>
-        <Glow size={1.5} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.34 + 0.08 * Math.sin(t * 3.1))} />
+        <Glow size={0.8} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.2 + 0.05 * Math.sin(t * 3.1))} />
       </group>
       <Glow position={[0, 5.9, 0.95]} size={2.6} color={COLORS.cyan} intensity={() => clamp01(ch.crystal * 0.3 + Math.sin(Math.PI * ch.pulse) * 0.35)} />
     </group>
