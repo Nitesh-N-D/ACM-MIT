@@ -3,8 +3,7 @@ import { territories } from "@/config/territories";
 /**
  * Global site configuration.
  *
- * Chapter-specific facts must come from the ACM MIT team. Anything not yet
- * confirmed is marked with `TODO(chapter)`.
+ * Chapter-specific facts here come from the ACM MIT team.
  */
 
 export const site = {
