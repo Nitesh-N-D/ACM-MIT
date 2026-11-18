@@ -18,7 +18,7 @@ Everything in the 3D scenes is generated in code at runtime, with one exception:
 
 | Field | Value |
 | --- | --- |
-| File | `public/models/sentinel.glb` (the earlier model is kept at the repository root as `captain_v2.glb`) |
+| File | `public/models/sentinel.glb` |
 | Size | 5,689,092 bytes |
 | Contents | Armoured knight ("ORDEVAL — The Gilded Lionheart") holding a longsword: one skinned mesh, 57,752 triangles, 18 joints including a `Sword` bone, textures resized to 2048 px JPEG |
 | Generator | `meshy-scene` (from the source file header) |
