@@ -11,10 +11,12 @@ type GlowProps = {
   color: string;
   /** Called each frame; returns opacity 0..1. */
   intensity: (t: number) => number;
+  /** False draws the glow over nearer geometry (light through a slit). */
+  depthTest?: boolean;
 };
 
 /** Additive glow sprite — a cheap substitute for bloom post-processing. */
-export function Glow({ position, size, color, intensity }: GlowProps) {
+export function Glow({ position, size, color, intensity, depthTest = true }: GlowProps) {
   const mat = useRef<THREE.SpriteMaterial>(null);
   const spr = useRef<THREE.Sprite>(null);
   useFrame(({ clock }) => {
@@ -31,6 +33,7 @@ export function Glow({ position, size, color, intensity }: GlowProps) {
         transparent
         opacity={0}
         depthWrite={false}
+        depthTest={depthTest}
         blending={THREE.AdditiveBlending}
         toneMapped={false}
         fog={false}

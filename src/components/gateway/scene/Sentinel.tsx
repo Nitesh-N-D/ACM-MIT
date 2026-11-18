@@ -13,10 +13,11 @@ import { COLORS, clamp01, sub, useScene } from "./state";
 /**
  * The Nexus Sentinel.
  *
- * `Sentinel` renders the rigged character model (SentinelModel) on the HIGH
- * and BALANCED tiers. `ProceduralSentinel` below is the FALLBACK figure,
- * assembled from primitives: it is shown on the LOW tier, while the model
- * file loads, and if the model fails to load. It is not a sculpted character.
+ * `Sentinel` renders the chapter's knight (SentinelModel) on every tier,
+ * phones included. `ProceduralSentinel` below is the FALLBACK figure,
+ * assembled from primitives: it is shown while the model file loads, if the
+ * model fails to load, and to visitors who have asked their browser to save
+ * data (the model is a ~6 MB download). It is not a sculpted character.
  * See docs/ASSETS.md.
  */
 
@@ -57,10 +58,15 @@ class ModelBoundary extends Component<{ fallback: ReactNode; children: ReactNode
   }
 }
 
+/** The visitor has asked the browser to keep downloads small. */
+function savingData() {
+  if (typeof navigator === "undefined") return false;
+  return Boolean((navigator as Navigator & { connection?: { saveData?: boolean } }).connection?.saveData);
+}
+
 export function Sentinel() {
-  const { tier } = useScene();
   const fallback = <ProceduralSentinel />;
-  if (!tier.environment) return fallback;
+  if (savingData()) return fallback;
   return (
     <ModelBoundary fallback={fallback}>
       <Suspense fallback={fallback}>

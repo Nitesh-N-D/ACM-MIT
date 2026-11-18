@@ -6,7 +6,7 @@ Everything in the 3D scenes is generated in code at runtime, with one exception:
 
 | Element | Status | Source |
 | --- | --- | --- |
-| Nexus Sentinel (guardian) | **Rigged GLB model**, supplied by the chapter. Procedural figure kept as the loading and error fallback. | `public/models/sentinel.glb`, driven by `src/components/gateway/scene/SentinelModel.tsx`; fallback in `Sentinel.tsx` |
+| Nexus Sentinel (guardian) | **Rigged GLB model**, supplied by the chapter. Shown on every quality tier, phones included (matte metal where there is no environment map). Procedural figure kept as the loading and error fallback, and for visitors with data saver on. | `public/models/sentinel.glb`, driven by `src/components/gateway/scene/SentinelModel.tsx`; fallback in `Sentinel.tsx` |
 | Sword Key and lock | The sword is part of the Sentinel model; the lock, glyphs and blade glow are procedural. | `src/components/gateway/scene/SwordKey.tsx`, `SentinelModel.tsx` |
 | Strike lightning | Procedural 3D bolt (fractal channel, branches, return stroke and two re-strikes, crackle arcs, sparks) rendered as camera-facing ribbons. No textures or video. | `src/components/gateway/scene/Lightning.tsx` |
 | Gateway, platform, bridge | Procedural. | `src/components/gateway/scene/` |

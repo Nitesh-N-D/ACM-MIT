@@ -30,8 +30,18 @@ import { COLORS, clamp01, sub, useScene } from "./state";
 
 export const SENTINEL_MODEL = "/models/sentinel.glb";
 
-/** The visor slit, relative to the Head joint (model metres). */
-const VISOR = new THREE.Vector3(0, 0.038, 0.12);
+/** The visor slit, relative to the Head joint (model metres); x and z are refined from the mesh. */
+const VISOR = new THREE.Vector3(0, 0.05, 0.12);
+/** Half the distance between the two eyes behind the visor (model metres). */
+const EYE_SPREAD = 0.028;
+/** Seconds between blinks. */
+const BLINK_EVERY = 5.3;
+
+/** 1 with the eyes open; a quick close and open every few seconds. */
+function blink(t: number) {
+  const u = t / BLINK_EVERY - Math.floor(t / BLINK_EVERY);
+  return u < 0.035 ? 1 - Math.sin((u / 0.035) * Math.PI) : 1;
+}
 /** The two hands on the grip: the left one above the right. */
 const LEFT_ABOVE = 0.095;
 /** How far along the grip (from the grip centre towards the pommel) the right hand sits. */
@@ -130,9 +140,14 @@ declare global {
 }
 
 export function SentinelModel() {
-  const { ch } = useScene();
+  const { ch, tier } = useScene();
+  const reflections = tier.environment;
   const group = useRef<THREE.Group>(null);
   const eyes = useRef<THREE.Group>(null);
+  // How squarely the helm faces the camera (0 side-on or behind, 1 head-on):
+  // the eyes are drawn over the helm, so they must only show from the front.
+  const facing = useRef(0);
+  const welcomeGlow = useRef(0);
   // No Draco / Meshopt decoders: the file is uncompressed, nothing is fetched from a CDN.
   const gltf = useGLTF(SENTINEL_MODEL, false, false);
 
@@ -153,6 +168,12 @@ export function SentinelModel() {
       if (mesh.isSkinnedMesh) energy.uSwordJoint.value = mesh.skeleton.bones.findIndex((b) => b.name === "Sword");
       const mat = (mesh.material as THREE.MeshStandardMaterial).clone();
       mat.envMapIntensity = 1.2;
+      // Without an environment map (the low tier, i.e. most phones) polished
+      // metal has nothing to reflect and renders black: let the lights shape it.
+      if (!reflections) {
+        mat.metalness = Math.min(mat.metalness, 0.35);
+        mat.roughness = Math.max(mat.roughness, 0.55);
+      }
       mat.onBeforeCompile = (shader) => {
         Object.assign(shader.uniforms, energy);
         shader.vertexShader = shader.vertexShader
@@ -181,6 +202,41 @@ export function SentinelModel() {
     root.traverse((o) => {
       if ((o as THREE.Bone).isBone) rest.set(o, o.quaternion.clone());
     });
+    // Where the eyes sit: centred on the helm's face plate, measured from the
+    // bind-pose vertices that ride on the head (model metres, head-relative).
+    const visor = VISOR.clone();
+    const headBone = bone("Head");
+    root.updateWorldMatrix(true, true);
+    root.traverse((o) => {
+      const mesh = o as THREE.SkinnedMesh;
+      if (!mesh.isSkinnedMesh || !headBone) return;
+      const hi = mesh.skeleton.bones.indexOf(headBone);
+      if (hi < 0) return;
+      mesh.skeleton.update();
+      const si = mesh.geometry.attributes.skinIndex;
+      const sw = mesh.geometry.attributes.skinWeight;
+      if (!si || !sw) return;
+      const headAt = headBone.getWorldPosition(new THREE.Vector3());
+      const p = new THREE.Vector3();
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i < si.count; i++) {
+        let w = 0;
+        for (let k = 0; k < 4; k++) if (si.getComponent(i, k) === hi) w += sw.getComponent(i, k);
+        if (w < 0.5) continue;
+        mesh.getVertexPosition(i, p);
+        mesh.applyBoneTransform(i, p);
+        pts.push(p.applyMatrix4(mesh.matrixWorld).sub(headAt).clone());
+      }
+      if (!pts.length) return;
+      // The face plate: the front-most few centimetres, below any plume.
+      const front = Math.max(...pts.filter((q) => q.y < 0.15).map((q) => q.z));
+      const plate = pts.filter((q) => q.y < 0.15 && q.z > front - 0.04);
+      if (plate.length < 8) return;
+      const xs = plate.map((q) => q.x);
+      visor.x = (Math.min(...xs) + Math.max(...xs)) / 2;
+      visor.z = front - 0.01;
+    });
+
     // The right hand's authored grip, relative to the sword (model metres).
     const rightWrist = new THREE.Vector3();
     const right = arms.find((a) => a.side === -1);
@@ -199,6 +255,7 @@ export function SentinelModel() {
       arms,
       rest,
       rightWrist,
+      visor,
       hips: bone("Hips"),
       spine: bone("Spine"),
       chest: bone("Chest"),
@@ -206,7 +263,7 @@ export function SentinelModel() {
       neck: bone("neck"),
       sword: bone("Sword"),
     };
-  }, [gltf]);
+  }, [gltf, reflections]);
 
   // Geometry and textures belong to the shared GLTF cache and are left alone;
   // the cloned materials are this component's to release.
@@ -228,7 +285,7 @@ export function SentinelModel() {
   }, []);
   useEffect(() => () => keyLight.dispose(), [keyLight]);
 
-  useFrame(({ clock }) => {
+  useFrame(({ clock, camera }) => {
     const t = clock.elapsedTime;
     const wake = ease(clamp01(ch.visor));
     keyLight.intensity = 30 * (0.35 + 0.65 * wake);
@@ -265,7 +322,15 @@ export function SentinelModel() {
     if (rig.head && eyes.current && group.current) {
       rig.head.getWorldPosition(v.a);
       group.current.worldToLocal(v.a);
-      eyes.current.position.copy(v.b.copy(VISOR).multiplyScalar(rig.scale).applyQuaternion(q.offset)).add(v.a);
+      eyes.current.position.copy(v.b.copy(rig.visor).multiplyScalar(rig.scale).applyQuaternion(q.offset)).add(v.a);
+      eyes.current.quaternion.copy(q.offset);
+      eyes.current.updateWorldMatrix(true, false);
+      eyes.current.getWorldPosition(v.c);
+      v.dir.set(0, 0, 1).applyQuaternion(eyes.current.getWorldQuaternion(q.world));
+      const toCamera = v.b.copy(camera.position).sub(v.c).normalize();
+      facing.current = THREE.MathUtils.smoothstep(v.dir.dot(toCamera), 0.25, 0.65);
+      // The eyes brighten as he nods, like a smile you can only see in them.
+      welcomeGlow.current = welcome;
     }
 
     // The sword: planted, driven home and turned (model space → its joint).
@@ -325,9 +390,23 @@ export function SentinelModel() {
       <primitive object={keyLight} />
       <primitive object={keyLight.target} />
       <primitive object={rig.root} scale={rig.scale} position={[0, -rig.minY * rig.scale, 0]} />
-      {/* The eyes kindle behind the visor as he wakes. */}
+      {/* The eyes kindle behind the visor as he wakes, blink now and then,
+          and warm a little with each nod of welcome. */}
       <group ref={eyes} position={[0, 7.6, 0.75]}>
-        <Glow size={0.75} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.32 + 0.06 * Math.sin(t * 3.1))} />
+        <Glow size={0.75} color={COLORS.cyan} intensity={(t) => sub(ch.visor, 0.2, 1) * (0.2 + 0.04 * Math.sin(t * 3.1))} />
+        {[-1, 1].flatMap((side) =>
+          // A bright core in a soft halo: two points of light, not one smear.
+          ([[0.13, 1], [0.3, 0.45]] as const).map(([size, gain]) => (
+            <Glow
+              key={`${side}-${size}`}
+              position={[side * EYE_SPREAD * rig.scale, 0, 0]}
+              size={size}
+              color={COLORS.cyan}
+              depthTest={false}
+              intensity={(t) => gain * sub(ch.visor, 0.2, 1) * facing.current * blink(t) * (0.85 + 0.15 * welcomeGlow.current)}
+            />
+          )),
+        )}
       </group>
     </group>
   );

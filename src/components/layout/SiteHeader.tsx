@@ -83,7 +83,7 @@ export function SiteHeader() {
 
           <div className="flex items-center gap-1 sm:gap-2">
             {/* On small phones these two live in the menu panel instead. */}
-            <span className="mr-1 hidden min-[400px]:block">
+            <span className="mr-1 hidden sm:block">
               <ViewSwitch />
             </span>
             <SoundToggle />
