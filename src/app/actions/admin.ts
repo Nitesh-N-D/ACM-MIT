@@ -4,6 +4,7 @@ import { randomUUID } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { ENTITIES, isEntityKey, type EntityKey } from "@/lib/admin/entities";
+import { MEDIA_KINDS } from "@/lib/admin/media";
 import { MAX_UPLOAD, MEDIA_REFS, checkImages, explain, isUuid, mediaUsage, parseRecord, sniffImage } from "@/lib/admin/server";
 import { adminAccess } from "@/lib/auth/session";
 import { ADMINS, CONTENT, EVENTS, ROLES, STAFF, SUPER, type Role } from "@/lib/auth/roles";
@@ -80,7 +81,7 @@ export async function deleteRecord(key: EntityKey, id: string): Promise<FormStat
 /* Media library                                                             */
 /* ------------------------------------------------------------------------ */
 
-const MEDIA_KINDS = ["photo", "banner", "poster", "highlight", "recap", "group", "portrait", "project", "other"] as const;
+// MEDIA_KINDS: see @/lib/admin/media.
 
 export type UploadResult = { ok: true; id: string; message: string } | { ok: false; message: string };
 

@@ -6,21 +6,35 @@ import { navFor } from "@/lib/admin/nav";
 import { ROLE_LABEL } from "@/lib/auth/roles";
 import { requireAdmin } from "@/lib/auth/session";
 
-export default async function ConsoleLayout({ children }: { children: ReactNode }) {
+export default async function ConsoleLayout({
+  children,
+}: {
+  children: ReactNode;
+}) {
   const { viewer } = await requireAdmin();
   const groups = navFor(viewer.roles);
-  const role = viewer.roles.filter((r) => r !== "member").map((r) => ROLE_LABEL[r]).join(", ");
+  const role = viewer.roles
+    .filter((r) => r !== "member")
+    .map((r) => ROLE_LABEL[r])
+    .join(", ");
 
   return (
     <>
-      <a href="#main" className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-panel focus:px-4 focus:py-2 focus:text-ice">
+      <a
+        href="#main"
+        className="sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-50 focus:bg-panel focus:px-4 focus:py-2 focus:text-ice"
+      >
         Skip to content
       </a>
       <header className="border-b border-line bg-abyss/80">
         <div className="mx-auto flex max-w-[96rem] flex-wrap items-center justify-between gap-3 px-4 py-3 sm:px-6">
           <Link href="/admin" className="flex items-baseline gap-3">
-            <span className="font-display text-sm tracking-[0.2em] text-ice">NEXUS</span>
-            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan">Command centre</span>
+            <span className="font-display text-sm tracking-[0.2em] text-ice">
+              NEXUS
+            </span>
+            <span className="font-mono text-[10px] uppercase tracking-[0.24em] text-cyan">
+              Command centre
+            </span>
           </Link>
           <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2 text-xs">
             <span className="min-w-0 truncate text-muted" title={viewer.email}>

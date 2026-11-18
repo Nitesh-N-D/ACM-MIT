@@ -7,7 +7,19 @@ import { CONTENT, EVENTS, STAFF, type Role } from "@/lib/auth/roles";
  * on the server; Row Level Security enforces the roles again in the database.
  */
 
-export type FieldType = "text" | "textarea" | "slug" | "url" | "select" | "checkbox" | "datetime" | "date" | "number" | "tags" | "image" | "ref";
+export type FieldType =
+  | "text"
+  | "textarea"
+  | "slug"
+  | "url"
+  | "select"
+  | "checkbox"
+  | "datetime"
+  | "date"
+  | "number"
+  | "tags"
+  | "image"
+  | "ref";
 
 export type Option = { value: string; label: string };
 
@@ -30,9 +42,21 @@ export type FieldDef = {
   initial?: string | boolean;
 };
 
-export type ColumnDef = { name: string; label: string; kind?: "text" | "date" | "datetime" | "status" | "bool" };
+export type ColumnDef = {
+  name: string;
+  label: string;
+  kind?: "text" | "date" | "datetime" | "status" | "bool";
+};
 
-export type EntityKey = "events" | "projects" | "announcements" | "learning" | "achievements" | "team" | "heritage" | "albums";
+export type EntityKey =
+  | "events"
+  | "projects"
+  | "announcements"
+  | "learning"
+  | "achievements"
+  | "team"
+  | "heritage"
+  | "albums";
 
 export type EntityDef = {
   key: EntityKey;
@@ -58,7 +82,9 @@ const STATUS: Option[] = [
   { value: "archived", label: "Archived (hidden)" },
 ];
 
-const status = (hint = "Only published records appear on the public site."): FieldDef => ({
+const status = (
+  hint = "Only published records appear on the public site.",
+): FieldDef => ({
   name: "status",
   label: "Status",
   type: "select",
@@ -68,7 +94,15 @@ const status = (hint = "Only published records appear on the public site."): Fie
   hint,
 });
 
-const sort: FieldDef = { name: "sort_order", label: "Sort order", type: "number", min: -10000, max: 10000, initial: "0", hint: "Lower numbers come first." };
+const sort: FieldDef = {
+  name: "sort_order",
+  label: "Sort order",
+  type: "number",
+  min: -10000,
+  max: 10000,
+  initial: "0",
+  hint: "Lower numbers come first.",
+};
 
 const published = (row: Record<string, unknown>) => row.status === "published";
 
@@ -78,7 +112,8 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     table: "events",
     label: "Events",
     singular: "event",
-    description: "Hackathons, workshops, competitions and talks in the Colosseum.",
+    description:
+      "Hackathons, workshops, competitions and talks in the Colosseum.",
     roles: EVENTS,
     title: "title",
     search: ["title", "summary", "venue", "category"],
@@ -93,7 +128,12 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 160 },
-      { name: "slug", label: "Web address", type: "slug", hint: "Left empty, it is made from the title." },
+      {
+        name: "slug",
+        label: "Web address",
+        type: "slug",
+        hint: "Left empty, it is made from the title.",
+      },
       {
         name: "category",
         label: "Category",
@@ -112,13 +152,46 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
         ],
       },
       { name: "venue", label: "Venue", type: "text", max: 200 },
-      { name: "summary", label: "Summary", type: "textarea", max: 400, wide: true, hint: "One or two sentences shown on cards." },
-      { name: "description", label: "Full description", type: "textarea", max: 12000, wide: true },
-      { name: "starts_at", label: "Starts", type: "datetime", hint: "India Standard Time." },
+      {
+        name: "summary",
+        label: "Summary",
+        type: "textarea",
+        max: 400,
+        wide: true,
+        hint: "One or two sentences shown on cards.",
+      },
+      {
+        name: "description",
+        label: "Full description",
+        type: "textarea",
+        max: 12000,
+        wide: true,
+      },
+      {
+        name: "starts_at",
+        label: "Starts",
+        type: "datetime",
+        hint: "India Standard Time.",
+      },
       { name: "ends_at", label: "Ends", type: "datetime" },
-      { name: "registration_deadline", label: "Registration deadline", type: "datetime" },
-      { name: "capacity", label: "Capacity", type: "number", min: 1, max: 100000, hint: "Empty for no limit. Beyond it, members join a waitlist." },
-      { name: "registration_open", label: "Registration is open", type: "checkbox" },
+      {
+        name: "registration_deadline",
+        label: "Registration deadline",
+        type: "datetime",
+      },
+      {
+        name: "capacity",
+        label: "Capacity",
+        type: "number",
+        min: 1,
+        max: 100000,
+        hint: "Empty for no limit. Beyond it, members join a waitlist.",
+      },
+      {
+        name: "registration_open",
+        label: "Registration is open",
+        type: "checkbox",
+      },
       { name: "featured", label: "Feature this event", type: "checkbox" },
       { name: "banner_path", label: "Banner image", type: "image" },
       { name: "poster_path", label: "Poster image", type: "image" },
@@ -144,11 +217,39 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 160 },
-      { name: "slug", label: "Web address", type: "slug", hint: "Left empty, it is made from the title." },
-      { name: "team", label: "Team", type: "text", max: 400, hint: "Names as the team wishes to be credited." },
-      { name: "tags", label: "Tags", type: "tags", hint: "Comma separated, for example: web, open-source, research." },
-      { name: "summary", label: "Summary", type: "textarea", max: 400, wide: true },
-      { name: "description", label: "Description", type: "textarea", max: 12000, wide: true },
+      {
+        name: "slug",
+        label: "Web address",
+        type: "slug",
+        hint: "Left empty, it is made from the title.",
+      },
+      {
+        name: "team",
+        label: "Team",
+        type: "text",
+        max: 400,
+        hint: "Names as the team wishes to be credited.",
+      },
+      {
+        name: "tags",
+        label: "Tags",
+        type: "tags",
+        hint: "Comma separated, for example: web, open-source, research.",
+      },
+      {
+        name: "summary",
+        label: "Summary",
+        type: "textarea",
+        max: 400,
+        wide: true,
+      },
+      {
+        name: "description",
+        label: "Description",
+        type: "textarea",
+        max: 12000,
+        wide: true,
+      },
       { name: "repo_url", label: "Repository link", type: "url" },
       { name: "demo_url", label: "Demo link", type: "url" },
       { name: "image_path", label: "Image", type: "image" },
@@ -175,8 +276,20 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 160 },
-      { name: "slug", label: "Anchor", type: "slug", hint: "Left empty, it is made from the title." },
-      { name: "body", label: "Message", type: "textarea", max: 12000, wide: true, required: true },
+      {
+        name: "slug",
+        label: "Anchor",
+        type: "slug",
+        hint: "Left empty, it is made from the title.",
+      },
+      {
+        name: "body",
+        label: "Message",
+        type: "textarea",
+        max: 12000,
+        wide: true,
+        required: true,
+      },
       { name: "pinned", label: "Pin to the top", type: "checkbox" },
       status("Publishing stamps today's date unless one is already set."),
     ],
@@ -194,7 +307,12 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       { column: "sort_order", ascending: true },
       { column: "created_at", ascending: false },
     ],
-    publicPath: (r) => (published(r) ? (r.realm === "general" ? "/learning" : `/learning?realm=${r.realm}`) : null),
+    publicPath: (r) =>
+      published(r)
+        ? r.realm === "general"
+          ? "/learning"
+          : `/learning?realm=${r.realm}`
+        : null,
     columns: [
       { name: "title", label: "Title" },
       { name: "kind", label: "Kind" },
@@ -227,8 +345,20 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
           { value: "technology", label: "Technology Frontier" },
         ],
       },
-      { name: "level", label: "Level", type: "text", max: 40, hint: "For example: Beginner, Intermediate." },
-      { name: "summary", label: "Summary", type: "textarea", max: 2000, wide: true },
+      {
+        name: "level",
+        label: "Level",
+        type: "text",
+        max: 40,
+        hint: "For example: Beginner, Intermediate.",
+      },
+      {
+        name: "summary",
+        label: "Summary",
+        type: "textarea",
+        max: 2000,
+        wide: true,
+      },
       { name: "url", label: "Link", type: "url" },
       sort,
       status(),
@@ -253,9 +383,21 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 200 },
-      { name: "category", label: "Category", type: "text", max: 80, hint: "For example: Hackathon, Research, Recognition." },
+      {
+        name: "category",
+        label: "Category",
+        type: "text",
+        max: 80,
+        hint: "For example: Hackathon, Research, Recognition.",
+      },
       { name: "achieved_on", label: "Date", type: "date" },
-      { name: "description", label: "Description", type: "textarea", max: 4000, wide: true },
+      {
+        name: "description",
+        label: "Description",
+        type: "textarea",
+        max: 4000,
+        wide: true,
+      },
       { name: "image_path", label: "Image", type: "image" },
       sort,
       status(),
@@ -274,7 +416,12 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       { column: "sort_order", ascending: true },
       { column: "name", ascending: true },
     ],
-    publicPath: (r) => (r.visible && r.consent_confirmed ? (r.group_kind === "alumni" ? "/alumni" : "/team") : null),
+    publicPath: (r) =>
+      r.visible && r.consent_confirmed
+        ? r.group_kind === "alumni"
+          ? "/alumni"
+          : "/team"
+        : null,
     columns: [
       { name: "name", label: "Name" },
       { name: "position", label: "Position" },
@@ -300,16 +447,34 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
           { value: "member", label: "Member" },
         ],
       },
-      { name: "tenure", label: "Tenure", type: "text", max: 60, hint: "For example: 2025–26." },
-      { name: "bio", label: "Short bio", type: "textarea", max: 2000, wide: true },
+      {
+        name: "tenure",
+        label: "Tenure",
+        type: "text",
+        max: 60,
+        hint: "For example: 2025–26.",
+      },
+      {
+        name: "bio",
+        label: "Short bio",
+        type: "textarea",
+        max: 2000,
+        wide: true,
+      },
       { name: "linkedin_url", label: "LinkedIn", type: "url", https: true },
       { name: "github_url", label: "GitHub", type: "url", https: true },
       { name: "website_url", label: "Website", type: "url", https: true },
       sort,
-      { name: "active", label: "Currently active", type: "checkbox", initial: true },
+      {
+        name: "active",
+        label: "Currently active",
+        type: "checkbox",
+        initial: true,
+      },
       {
         name: "consent_confirmed",
-        label: "This person agreed to appear on the website, with the details and photograph above",
+        label:
+          "This person agreed to appear on the website, with the details and photograph above",
         type: "checkbox",
         wide: true,
         hint: "Required before the person can be shown or a photograph attached.",
@@ -323,7 +488,8 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     table: "heritage_entries",
     label: "Heritage",
     singular: "exhibit",
-    description: "The archive of ACM, ACM India and ACM MIT chapter history. Every exhibit cites its source.",
+    description:
+      "The archive of ACM, ACM India and ACM MIT chapter history. Every exhibit cites its source.",
     roles: CONTENT,
     title: "title",
     search: ["title", "summary", "date_label", "source_label"],
@@ -341,7 +507,12 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 200 },
-      { name: "slug", label: "Identifier", type: "slug", hint: "Left empty, it is made from the title." },
+      {
+        name: "slug",
+        label: "Identifier",
+        type: "slug",
+        hint: "Left empty, it is made from the title.",
+      },
       {
         name: "gallery",
         label: "Gallery",
@@ -355,16 +526,63 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
         ],
       },
       { name: "year", label: "Year", type: "number", min: 1900, max: 2200 },
-      { name: "date_label", label: "Date as shown", type: "text", max: 60, hint: "For example: 15 September 1947." },
-      { name: "summary", label: "Summary", type: "textarea", max: 600, required: true, wide: true },
-      { name: "body", label: "More detail", type: "textarea", max: 6000, wide: true },
-      { name: "source_url", label: "Source link", type: "url", https: true, required: true, hint: "Verified information only: every exhibit names where its facts come from." },
+      {
+        name: "date_label",
+        label: "Date as shown",
+        type: "text",
+        max: 60,
+        hint: "For example: 15 September 1947.",
+      },
+      {
+        name: "summary",
+        label: "Summary",
+        type: "textarea",
+        max: 600,
+        required: true,
+        wide: true,
+      },
+      {
+        name: "body",
+        label: "More detail",
+        type: "textarea",
+        max: 6000,
+        wide: true,
+      },
+      {
+        name: "source_url",
+        label: "Source link",
+        type: "url",
+        https: true,
+        required: true,
+        hint: "Verified information only: every exhibit names where its facts come from.",
+      },
       { name: "source_label", label: "Source name", type: "text", max: 200 },
-      { name: "link_url", label: "Further reading link", type: "url", https: true },
-      { name: "link_label", label: "Further reading label", type: "text", max: 120 },
+      {
+        name: "link_url",
+        label: "Further reading link",
+        type: "url",
+        https: true,
+      },
+      {
+        name: "link_label",
+        label: "Further reading label",
+        type: "text",
+        max: 120,
+      },
       { name: "image_path", label: "Photograph", type: "image" },
-      { name: "image_alt", label: "Photograph description (alt text)", type: "text", max: 300 },
-      { name: "image_rights_confirmed", label: "We have the right to publish this photograph, and anyone shown agreed", type: "checkbox", wide: true },
+      {
+        name: "image_alt",
+        label: "Photograph description (alt text)",
+        type: "text",
+        max: 300,
+      },
+      {
+        name: "image_rights_confirmed",
+        label:
+          "We have the right to publish this photograph, and anyone shown agreed",
+        type: "checkbox",
+        wide: true,
+      },
       sort,
       status(),
     ],
@@ -390,18 +608,38 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
     ],
     fields: [
       { name: "title", label: "Title", type: "text", required: true, max: 160 },
-      { name: "slug", label: "Web address", type: "slug", hint: "Left empty, it is made from the title." },
-      { name: "event_id", label: "Event", type: "ref", ref: "events", hint: "Optional: the event these photographs are from." },
-      { name: "description", label: "Description", type: "textarea", max: 2000, wide: true },
+      {
+        name: "slug",
+        label: "Web address",
+        type: "slug",
+        hint: "Left empty, it is made from the title.",
+      },
+      {
+        name: "event_id",
+        label: "Event",
+        type: "ref",
+        ref: "events",
+        hint: "Optional: the event these photographs are from.",
+      },
+      {
+        name: "description",
+        label: "Description",
+        type: "textarea",
+        max: 2000,
+        wide: true,
+      },
       sort,
-      status("Photographs inside appear only once their consent is confirmed in the media library."),
+      status(
+        "Photographs inside appear only once their consent is confirmed in the media library.",
+      ),
     ],
   },
 };
 
 export const ENTITY_KEYS = Object.keys(ENTITIES) as EntityKey[];
 
-export const isEntityKey = (k: string): k is EntityKey => (ENTITY_KEYS as string[]).includes(k);
+export const isEntityKey = (k: string): k is EntityKey =>
+  (ENTITY_KEYS as string[]).includes(k);
 
 /** The serialisable part of a definition, for client components. */
 export function fieldsOf(key: EntityKey): FieldDef[] {
@@ -430,7 +668,10 @@ export function fromLocalInput(v: string): string | null {
 }
 
 /** The current value of a field on a row, as the form shows it. */
-export function formValue(field: FieldDef, row: Record<string, unknown> | null): string {
+export function formValue(
+  field: FieldDef,
+  row: Record<string, unknown> | null,
+): string {
   if (!row) return typeof field.initial === "string" ? field.initial : "";
   const v = row[field.name];
   if (v === null || v === undefined) return "";
@@ -440,7 +681,10 @@ export function formValue(field: FieldDef, row: Record<string, unknown> | null):
   return String(v);
 }
 
-export function formChecked(field: FieldDef, row: Record<string, unknown> | null): boolean {
+export function formChecked(
+  field: FieldDef,
+  row: Record<string, unknown> | null,
+): boolean {
   if (!row) return field.initial === true;
   return row[field.name] === true;
 }
