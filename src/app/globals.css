@@ -90,6 +90,19 @@
     scroll-padding-top: calc(var(--spacing-header) + 1rem);
   }
 
+  /* Large and 4K screens: everything sized in rem (text, spacing, the HUD)
+     grows a step, in proportion to the visitor's own font-size setting. */
+  @media (min-width: 2200px) {
+    html {
+      font-size: 112.5%;
+    }
+  }
+  @media (min-width: 3000px) {
+    html {
+      font-size: 137.5%;
+    }
+  }
+
   body {
     min-height: 100dvh;
     background-color: var(--color-void);

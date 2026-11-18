@@ -150,7 +150,7 @@ export function ExploreHud({
           <button
             type="button"
             onClick={() => setHelp(false)}
-            className="mt-2 font-mono text-[0.62rem] tracking-[0.16em] text-ice uppercase underline underline-offset-4 hover:text-cyan"
+            className="mt-2 -ml-2 min-h-8 px-2 font-mono text-[0.62rem] tracking-[0.16em] text-ice uppercase underline underline-offset-4 hover:text-cyan"
           >
             Got it
           </button>
@@ -174,7 +174,7 @@ export function ExploreHud({
               <li key={topic.name}>
                 <Link
                   href={topic.href}
-                  className="block border border-line px-2 py-0.5 font-mono text-[0.6rem] tracking-[0.12em] text-mist uppercase transition-colors hover:border-line-strong hover:text-ice"
+                  className="flex min-h-7 items-center border border-line px-2 py-1 font-mono text-[0.6rem] tracking-[0.12em] text-mist uppercase transition-colors hover:border-line-strong hover:text-ice"
                 >
                   {topic.name}
                 </Link>
