@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { JetBrains_Mono, Manrope, Unbounded } from "next/font/google";
 import { site } from "@/config/site";
+import { getSettings } from "@/lib/data/public";
 import { bootScript } from "@/lib/gateway/prefs";
 import { siteUrl } from "@/lib/supabase/env";
 import "./globals.css";
@@ -84,10 +85,19 @@ export const viewport: Viewport = {
   initialScale: 1,
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // Experience settings from the command centre, read by the boot script and the 3D code.
+  const { experience } = await getSettings();
   return (
     // The boot script sets data-intro / data-motion before paint, hence the warning suppression.
-    <html lang="en" className={`${display.variable} ${body.variable} ${mono.variable}`} suppressHydrationWarning>
+    <html
+      lang="en"
+      className={`${display.variable} ${body.variable} ${mono.variable}`}
+      data-site-intro={experience.introEnabled === false ? "off" : undefined}
+      data-site-quality={experience.maxQuality && experience.maxQuality !== "high" ? experience.maxQuality : undefined}
+      data-site-rotate={experience.autoRotate ? "on" : undefined}
+      suppressHydrationWarning
+    >
       <head>
         {/* Static, first-party script (no user input) — decides the intro before first paint. */}
         <script dangerouslySetInnerHTML={{ __html: bootScript }} />

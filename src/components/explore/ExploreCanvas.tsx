@@ -4,6 +4,7 @@ import { PerformanceMonitor } from "@react-three/drei";
 import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
+import "@/lib/three/console";
 import { TIERS, type Tier } from "@/lib/gateway/quality";
 import { FINAL, SceneCtx } from "@/components/gateway/scene/state";
 import type { HeritageEntry } from "@/config/heritage";

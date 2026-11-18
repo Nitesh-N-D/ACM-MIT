@@ -78,7 +78,7 @@ export default async function Page({ params }: Props) {
         <SourceNotice source={source} what="events" />
         <div className="grid gap-10 lg:grid-cols-[1fr_22rem]">
           <div className="min-w-0">
-            {banner && <Image src={banner} alt="" width={1200} height={520} unoptimized priority className="mb-8 aspect-[16/7] w-full border border-line object-cover" />}
+            {banner && <Image src={banner} alt="" width={1200} height={520} sizes="(min-width: 1024px) 66vw, 100vw" priority className="mb-8 aspect-[16/7] w-full border border-line object-cover" />}
             <h2 className="sr-only">About this event</h2>
             {event.description ? (
               <div className="max-w-3xl space-y-4 text-lg leading-relaxed whitespace-pre-line text-silver">{event.description}</div>
@@ -140,7 +140,7 @@ export default async function Page({ params }: Props) {
                 </div>
               </div>
             </div>
-            {poster && <Image src={poster} alt={`Poster for ${event.title}`} width={600} height={800} unoptimized className="h-auto w-full border border-line" />}
+            {poster && <Image src={poster} alt={`Poster for ${event.title}`} width={600} height={800} sizes="(min-width: 1024px) 33vw, 100vw" className="h-auto w-full border border-line" />}
             {mine === "waitlisted" && (
               <Notice tone="warning" title="Waitlisted">
                 You will be moved up automatically if a place opens.

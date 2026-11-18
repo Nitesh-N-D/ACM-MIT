@@ -36,7 +36,7 @@ export function EventCard({ event, accent = "#ff9d6b" }: { event: EventRow; acce
   return (
     <Card accent={accent} interactive className="h-full">
       <Link href={`/events/${event.slug}`} className="flex h-full flex-col focus-visible:outline-offset-[-4px]">
-        {img && <Image src={img} alt="" width={640} height={300} unoptimized className="aspect-[16/7] w-full border-b border-line object-cover" />}
+        {img && <Image src={img} alt="" width={640} height={300} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="aspect-[16/7] w-full border-b border-line object-cover" />}
         <div className="flex flex-1 flex-col p-6">
           <div className="flex flex-wrap items-center gap-2">
             <Badge tone="gold">{EVENT_CATEGORY[event.category] ?? "Event"}</Badge>
@@ -60,7 +60,7 @@ export function ProjectCard({ project, accent = "#3ee6c2" }: { project: ProjectR
   return (
     <Card accent={accent} interactive className="h-full">
       <Link href={`/vault/${project.slug}`} className="flex h-full flex-col focus-visible:outline-offset-[-4px]">
-        {img && <Image src={img} alt="" width={640} height={360} unoptimized className="aspect-video w-full border-b border-line object-cover" />}
+        {img && <Image src={img} alt="" width={640} height={360} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="aspect-video w-full border-b border-line object-cover" />}
         <div className="flex flex-1 flex-col p-6">
           {project.featured && (
             <Badge tone="cyan" className="self-start">
@@ -136,7 +136,7 @@ export function AchievementItem({ item }: { item: AchievementRow }) {
   const img = mediaUrl(item.image_path);
   return (
     <article className="nexus-frame flex h-full flex-col p-6">
-      {img && <Image src={img} alt="" width={640} height={360} unoptimized className="mb-4 aspect-video w-full border border-line object-cover" />}
+      {img && <Image src={img} alt="" width={640} height={360} sizes="(min-width: 1024px) 66vw, 100vw" className="mb-4 aspect-video w-full border border-line object-cover" />}
       <div className="flex flex-wrap items-center gap-2">
         {item.category && <Badge tone="gold">{item.category}</Badge>}
         {item.achieved_on && <span className="font-mono text-[0.68rem] tracking-[0.16em] text-dim uppercase">{formatDate(item.achieved_on)}</span>}
@@ -168,7 +168,7 @@ export function PersonCard({ person, accent = "#d8b25e" }: { person: TeamRow; ac
     <article className="nexus-frame flex h-full flex-col p-5">
       <div className="flex items-center gap-4">
         {img ? (
-          <Image src={img} alt={`Portrait of ${person.name}`} width={96} height={96} unoptimized className="size-16 shrink-0 border border-line object-cover" />
+          <Image src={img} alt={`Portrait of ${person.name}`} width={96} height={96} sizes="64px" className="size-16 shrink-0 border border-line object-cover" />
         ) : (
           <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center border font-display text-lg" style={{ borderColor: `${accent}66`, color: accent }}>
             {initials(person.name)}

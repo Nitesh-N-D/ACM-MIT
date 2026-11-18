@@ -54,6 +54,7 @@ export const prefs = {
  * - Applies the visitor's motion preference to <html data-motion>.
  * - On the home page, marks <html data-intro="play"> when the intro should
  *   run, so hero copy starts hidden instead of flashing then disappearing.
+ * - The chapter can switch the intro off for everyone (<html data-site-intro="off">).
  * - Failsafe: if the gateway never takes over (JS error, slow network),
  *   the hero is revealed after 9 s.
  */
@@ -61,6 +62,6 @@ export const bootScript = `(function(){try{var d=document.documentElement,s=loca
 var r=m==="reduced"||(m!=="full"&&matchMedia("(prefers-reduced-motion: reduce)").matches);
 if(r)d.setAttribute("data-motion","reduced");
 var c=navigator.connection;
-if(location.pathname==="/"&&!r&&s.getItem("${PREF_KEYS.intro}")!=="seen"&&!(c&&c.saveData)&&!/[?&]intro=0/.test(location.search)){
+if(location.pathname==="/"&&!r&&d.getAttribute("data-site-intro")!=="off"&&s.getItem("${PREF_KEYS.intro}")!=="seen"&&!(c&&c.saveData)&&!/[?&]intro=0/.test(location.search)){
 d.setAttribute("data-intro","play");setTimeout(function(){if(!window.__nexusGateway)d.removeAttribute("data-intro")},9000);}
 }catch(e){}})();`;

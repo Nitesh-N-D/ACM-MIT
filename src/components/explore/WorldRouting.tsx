@@ -48,9 +48,40 @@ function OpenFromSearch() {
 
 const OPEN_EVENT = "nexus:open-page";
 
-/** Opens a website page from inside the 3D scene (exhibition screens and the like). */
+const REVEAL_EVENT = "nexus:reveal";
+/** The card to show once the page being opened has loaded (`/team/topics/alumni#person-…`). */
+let pendingAnchor: string | null = null;
+
+/**
+ * Opens a website page from inside the 3D scene (exhibition screens and the
+ * like). With a `#card`, the panel opens unfolded at that card; if the page is
+ * already open (folded beside its hall), it simply unfolds there.
+ */
 export function openWorldPage(href: string) {
+  const [path = "", anchor] = href.split("#");
+  if (anchor && path === window.location.pathname) {
+    window.dispatchEvent(new CustomEvent<string>(REVEAL_EVENT, { detail: anchor }));
+    return;
+  }
+  pendingAnchor = anchor || null;
   window.dispatchEvent(new CustomEvent<string>(OPEN_EVENT, { detail: href }));
+}
+
+/** The card a just-opened page should show, once (see openWorldPage). */
+export function takePendingAnchor() {
+  const a = pendingAnchor;
+  pendingAnchor = null;
+  return a;
+}
+
+/** Calls `fn` when a card of the open page is asked for; returns the unsubscribe. */
+export function onReveal(fn: (anchor: string) => void) {
+  const listener = (e: Event) => {
+    const a = (e as CustomEvent<unknown>).detail;
+    if (typeof a === "string") fn(a);
+  };
+  window.addEventListener(REVEAL_EVENT, listener);
+  return () => window.removeEventListener(REVEAL_EVENT, listener);
 }
 
 /** One click listener for the whole site, mounted in the public layout. */

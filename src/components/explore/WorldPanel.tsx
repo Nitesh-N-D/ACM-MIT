@@ -8,6 +8,7 @@ import { getTerritory, type TerritoryId } from "@/config/territories";
 import { getHall } from "@/config/topics";
 import type { WorldFocus } from "@/config/world";
 import { explore, useExplore } from "./store";
+import { onReveal, takePendingAnchor } from "./WorldRouting";
 
 const FRAME =
   "fixed inset-x-0 bottom-0 top-[calc(var(--spacing-header)+30svh)] z-40 flex flex-col border-t bg-void/92 shadow-[0_0_60px_rgba(0,0,0,0.6)] backdrop-blur-md " +
@@ -72,6 +73,31 @@ export function WorldPanel({ focus, topic, children }: { focus: WorldFocus; topi
     body.current?.focus({ preventScroll: true });
     window.scrollTo({ top: 0 });
   }, [pathname]);
+
+  // A board item with no page of its own (a person, a milestone) opens its
+  // card on the hall's page: unfold the page and bring the card into view.
+  const reveal = useCallback(
+    (anchor: string) => {
+      setFold({ path: pathname, folded: false });
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          const el = body.current?.querySelector<HTMLElement>(`#${CSS.escape(anchor)}`);
+          el?.scrollIntoView({ block: "start", behavior: explore.get().reducedMotion ? "auto" : "smooth" });
+          el?.focus({ preventScroll: true });
+        }),
+      );
+    },
+    [pathname],
+  );
+  useEffect(() => {
+    // Taken inside the frame so a cancelled run (Strict Mode) leaves it for the next.
+    const frame = requestAnimationFrame(() => {
+      const a = takePendingAnchor();
+      if (a) reveal(a);
+    });
+    return () => cancelAnimationFrame(frame);
+  }, [reveal]);
+  useEffect(() => onReveal(reveal), [reveal]);
 
   const close = useCallback(() => router.push("/explore", { scroll: false }), [router]);
   useEffect(() => {

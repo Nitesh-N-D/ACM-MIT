@@ -59,7 +59,7 @@ export function PhotoGrid({ photos, label }: { photos: Photo[]; label: string })
                 alt={p.alt}
                 width={480}
                 height={360}
-                unoptimized
+                sizes="(min-width: 1024px) 25vw, (min-width: 640px) 33vw, 50vw"
                 className="aspect-[4/3] w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
               />
             </button>
@@ -82,7 +82,7 @@ export function PhotoGrid({ photos, label }: { photos: Photo[]; label: string })
                 alt={current.alt}
                 width={current.width ?? 1600}
                 height={current.height ?? 1067}
-                unoptimized
+                sizes="94vw"
                 className="mx-auto max-h-[78svh] w-auto object-contain"
               />
             </div>

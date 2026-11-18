@@ -25,7 +25,7 @@ function Tile({ href, title, meta, cover, count }: { href: string; title: string
     <Card accent={accent} interactive className="h-full">
       <Link href={href} className="flex h-full flex-col focus-visible:outline-offset-[-4px]">
         {cover ? (
-          <Image src={cover} alt="" width={640} height={420} unoptimized className="aspect-[3/2] w-full border-b border-line object-cover" />
+          <Image src={cover} alt="" width={640} height={420} sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw" className="aspect-[3/2] w-full border-b border-line object-cover" />
         ) : (
           <div
             aria-hidden="true"

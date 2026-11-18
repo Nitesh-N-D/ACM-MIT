@@ -70,7 +70,7 @@ export default async function Page({ params }: Props) {
                 alt={`${project.title} screenshot`}
                 width={1200}
                 height={675}
-                unoptimized
+                sizes="(min-width: 1024px) 66vw, 100vw"
                 priority
                 className="mb-8 aspect-video w-full border border-line object-cover"
               />

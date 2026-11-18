@@ -1,7 +1,7 @@
 import "server-only";
 import { cache } from "react";
 import { HERITAGE_REFERENCE, type HeritageEntry } from "@/config/heritage";
-import { createClient } from "@/lib/supabase/server";
+import { createPublicClient } from "@/lib/supabase/server";
 import { sampleAnnouncements, sampleEvents, sampleLearning, sampleProjects } from "./sample";
 import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, Loaded, MediaRow, ProjectRow, SettingsMap, TeamRow } from "./types";
 
@@ -13,8 +13,10 @@ import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, 
 
 type Query<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
 
-async function load<T>(sample: T[], run: (db: NonNullable<Awaited<ReturnType<typeof createClient>>>) => Query<T>): Promise<Loaded<T>> {
-  const db = await createClient();
+type PublicDb = NonNullable<ReturnType<typeof createPublicClient>>;
+
+async function load<T>(sample: T[], run: (db: PublicDb) => Query<T>): Promise<Loaded<T>> {
+  const db = createPublicClient();
   if (!db) return { source: "sample", items: sample };
   try {
     const { data, error } = await run(db);
@@ -70,7 +72,7 @@ export const listMedia = cache(() =>
 );
 
 export async function registrationCount(eventId: string): Promise<number | null> {
-  const db = await createClient();
+  const db = createPublicClient();
   if (!db) return null;
   const { data, error } = await db.rpc("event_registration_count", { p_event: eventId });
   return error || typeof data !== "number" ? null : data;
@@ -78,7 +80,7 @@ export async function registrationCount(eventId: string): Promise<number | null>
 
 export const getSettings = cache(async (): Promise<SettingsMap> => {
   const empty: SettingsMap = { home: {}, districts: {}, site: {}, experience: {} };
-  const db = await createClient();
+  const db = createPublicClient();
   if (!db) return empty;
   try {
     const { data } = await db.from("website_settings").select("key, value");
@@ -120,7 +122,7 @@ export type HeritageLoaded = {
  */
 export const listHeritage = cache(async (): Promise<HeritageLoaded> => {
   const reference: HeritageLoaded = { source: "reference", items: HERITAGE_REFERENCE };
-  const db = await createClient();
+  const db = createPublicClient();
   if (!db) return reference;
   try {
     const { data, error } = await db

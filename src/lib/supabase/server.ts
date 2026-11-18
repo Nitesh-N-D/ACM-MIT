@@ -1,5 +1,6 @@
 import "server-only";
 import { createServerClient } from "@supabase/ssr";
+import { createClient as createBareClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
 import { supabaseEnv } from "./env";
 
@@ -26,3 +27,14 @@ export async function createClient() {
 }
 
 export type Db = NonNullable<Awaited<ReturnType<typeof createClient>>>;
+
+/**
+ * Anonymous client with no cookies, for public pages. Reading published
+ * content never depends on who is looking, so those pages stay cacheable and
+ * are refreshed by revalidation when the command centre changes something.
+ */
+export function createPublicClient() {
+  const env = supabaseEnv();
+  if (!env) return null;
+  return createBareClient(env.url, env.anonKey, { auth: { persistSession: false, autoRefreshToken: false } });
+}

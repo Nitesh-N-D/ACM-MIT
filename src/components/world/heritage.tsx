@@ -1,6 +1,6 @@
 "use client";
 
-import { Html } from "@react-three/drei";
+import { OverlayLabel } from "./OverlayLabel";
 import { useFrame, type ThreeEvent } from "@react-three/fiber";
 import { useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -507,7 +507,7 @@ export function HeritageArchive({ entries = NONE, level, interactive = true }: P
             <cylinderGeometry args={[9.6, 9.6, 17, 12]} />
             <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
           </mesh>
-          <Html position={[0, ARCHIVE.height + 2.6, cz]} center zIndexRange={[5, 0]}>
+          <OverlayLabel position={[0, ARCHIVE.height + 2.6, cz]}>
             <button
               ref={label}
               type="button"
@@ -519,7 +519,7 @@ export function HeritageArchive({ entries = NONE, level, interactive = true }: P
             >
               <span style={{ color: GOLD }}>H</span> Heritage Archive
             </button>
-          </Html>
+          </OverlayLabel>
         </>
       )}
     </group>

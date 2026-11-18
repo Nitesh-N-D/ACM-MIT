@@ -74,7 +74,10 @@ export const explore = {
   /** Inspects the device once the page is running in the browser. */
   boot() {
     if (state.tier !== null) return;
-    set({ tier: resolveTier(prefs.quality(), detectTier()), reducedMotion: prefs.motion() === "reduced" });
+    const reducedMotion = prefs.motion() === "reduced";
+    // The chapter can make the overview slowly turn by default (Command centre → Experience).
+    const autoRotate = !reducedMotion && document.documentElement.getAttribute("data-site-rotate") === "on";
+    set({ tier: resolveTier(prefs.quality(), detectTier()), reducedMotion, autoRotate });
   },
   ready() {
     if (!state.ready) set({ ready: true });

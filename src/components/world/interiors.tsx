@@ -207,7 +207,8 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
   if (items.length) x.fillText("SELECT AN ITEM TO OPEN IT", MAIN.w - 64, 84);
   x.fillStyle = hexA(t.accent, 0.95);
   x.font = `600 26px ${FONT}`;
-  if (board) x.fillText(`${count} ${count === 1 ? "ITEM" : "ITEMS"}${board.source === "sample" ? " · SAMPLE DATA" : ""}`, MAIN.w - 64, 168);
+  const statement = hall.feed === "mission" || hall.feed === "vision";
+  if (board && !statement) x.fillText(`${count} ${count === 1 ? "ITEM" : "ITEMS"}${board.source === "sample" && count > 0 ? " · SAMPLE DATA" : ""}`, MAIN.w - 64, 168);
   x.textAlign = "left";
 
   const tiles = boardTiles(items.length);
@@ -233,7 +234,15 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
     }
   });
 
-  if (items.length === 0) {
+  if (board?.text) {
+    // A statement (Mission, Vision): the words themselves, in full where they fit.
+    x.fillStyle = t.accent;
+    x.fillRect(64, 214, 6, 320);
+    x.fillStyle = "#e6ecf8";
+    x.font = `500 34px ${FONT}`;
+    const lines = wrap(x, board.text.replace(/\s+/g, " "), MAIN.w - 176, 7);
+    lines.forEach((l, k) => x.fillText(l, 100, 256 + k * 46));
+  } else if (items.length === 0) {
     x.strokeStyle = hexA(t.accent, 0.35);
     x.lineWidth = 2;
     x.setLineDash([10, 8]);
@@ -242,11 +251,16 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
     x.fillStyle = "#c3cce4";
     x.font = `500 34px ${FONT}`;
     x.textAlign = "center";
-    const msg = !board || board.source === "error" ? "This hall could not be loaded right now." : "Nothing has been published in this hall yet.";
+    const failed = !board || board.source === "error";
+    const msg = failed
+      ? "This hall could not be loaded right now."
+      : statement
+        ? `The chapter has not published its ${hall.feed} here yet.`
+        : "Nothing has been published in this hall yet.";
     x.fillText(msg, MAIN.w / 2, 354);
     x.fillStyle = "#7d89a6";
     x.font = `400 24px ${FONT}`;
-    x.fillText("Its page lists everything as soon as it is.", MAIN.w / 2, 404);
+    x.fillText(statement && !failed ? "It appears on this display as soon as it is." : "Its page lists everything as soon as it is.", MAIN.w / 2, 404);
     x.textAlign = "left";
   }
 
@@ -487,7 +501,9 @@ function Room({ id, slug }: { id: TerritoryId; slug: string | null }) {
     if (i < 0) return;
     if (hall) {
       const item = board?.items[i];
-      if (wall === "main") item && openItem(item);
+      if (wall === "main") {
+        if (item) openItem(item);
+      }
       else if (wall === "exhibition") openWorldPage(hallHref(id, hall.slug));
       else if (i === 0) toReception();
       else openWorldPage(hallHref(id, halls[i - 1]!.slug));

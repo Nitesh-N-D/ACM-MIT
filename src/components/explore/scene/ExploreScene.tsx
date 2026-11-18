@@ -1,6 +1,6 @@
 "use client";
 
-import { Environment, Html, Lightformer } from "@react-three/drei";
+import { Environment, Lightformer } from "@react-three/drei";
 import { useFrame } from "@react-three/fiber";
 import { useMemo, useRef } from "react";
 import * as THREE from "three";
@@ -16,6 +16,7 @@ import { Bridge } from "@/components/gateway/scene/World";
 import { Ground } from "@/components/world/CityBlocks";
 import { Fabric } from "@/components/world/Fabric";
 import { HeritageArchive } from "@/components/world/heritage";
+import { OverlayLabel } from "@/components/world/OverlayLabel";
 import { Landmark, landmarkHeight } from "@/components/world/landmarks";
 import { DISTRICT_CLEARANCE, DISTRICT_POS, GROUND_Y } from "@/components/world/layout";
 import { Pedestrians } from "@/components/world/Pedestrians";
@@ -90,7 +91,7 @@ function District({ id, index, focus, arrive, activity }: { id: TerritoryId; ind
         <cylinderGeometry args={[DISTRICT_CLEARANCE[id] * 0.8, DISTRICT_CLEARANCE[id] * 0.8, h, 12]} />
         <meshBasicMaterial transparent opacity={0} depthWrite={false} colorWrite={false} />
       </mesh>
-      <Html position={[0, h + 7, 0]} center zIndexRange={[5, 0]}>
+      <OverlayLabel position={[0, h + 7, 0]}>
         <button
           ref={label}
           type="button"
@@ -104,7 +105,7 @@ function District({ id, index, focus, arrive, activity }: { id: TerritoryId; ind
         >
           <span style={{ color: t.accent }}>{t.code}</span> {t.short}
         </button>
-      </Html>
+      </OverlayLabel>
     </group>
   );
 }

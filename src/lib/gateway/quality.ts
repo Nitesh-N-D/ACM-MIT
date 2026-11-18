@@ -77,7 +77,21 @@ export function detectTier(): Tier {
   return "balanced";
 }
 
+const RANK: Record<Exclude<Tier, "fallback">, number> = { low: 0, balanced: 1, high: 2 };
+
+/**
+ * The highest tier the chapter allows (Command centre → Experience), set on
+ * <html data-site-quality> by the server. Absent means no cap.
+ */
+export function siteQualityCap(): Exclude<Tier, "fallback"> | null {
+  if (typeof document === "undefined") return null;
+  const v = document.documentElement.getAttribute("data-site-quality");
+  return v === "high" || v === "balanced" || v === "low" ? v : null;
+}
+
 export function resolveTier(pref: QualityPref, detected: Tier): Tier {
   if (detected === "fallback") return "fallback";
-  return pref === "auto" ? detected : pref;
+  const chosen = pref === "auto" ? detected : pref;
+  const cap = siteQualityCap();
+  return cap && RANK[chosen] > RANK[cap] ? cap : chosen;
 }
