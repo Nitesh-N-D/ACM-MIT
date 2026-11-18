@@ -2,22 +2,21 @@ import "server-only";
 import { cache } from "react";
 import { HERITAGE_REFERENCE, type HeritageEntry } from "@/config/heritage";
 import { createPublicClient } from "@/lib/supabase/server";
-import { sampleAnnouncements, sampleEvents, sampleLearning, sampleProjects } from "./sample";
 import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, Loaded, MediaRow, ProjectRow, SettingsMap, TeamRow, TeamUnitRow } from "./types";
 
 /**
  * Read side of the public site. Only published rows are requested, and Row
- * Level Security enforces the same rule in the database. Without a backend
- * the lists fall back to labelled sample content (or nothing, for people).
+ * Level Security enforces the same rule in the database. Without a database
+ * every list is empty ("offline"); nothing is invented in its place.
  */
 
 type Query<T> = PromiseLike<{ data: T[] | null; error: unknown }>;
 
 type PublicDb = NonNullable<ReturnType<typeof createPublicClient>>;
 
-async function load<T>(sample: T[], run: (db: PublicDb) => Query<T>): Promise<Loaded<T>> {
+async function load<T>(run: (db: PublicDb) => Query<T>): Promise<Loaded<T>> {
   const db = createPublicClient();
-  if (!db) return { source: "sample", items: sample };
+  if (!db) return { source: "offline", items: [] };
   try {
     const { data, error } = await run(db);
     if (error) return { source: "error", items: [] };
@@ -28,7 +27,7 @@ async function load<T>(sample: T[], run: (db: PublicDb) => Query<T>): Promise<Lo
 }
 
 export const listEvents = cache(() =>
-  load<EventRow>(sampleEvents, (db) => db.from("events").select("*").eq("status", "published").order("starts_at", { ascending: false, nullsFirst: true }).limit(200) as unknown as Query<EventRow>),
+  load<EventRow>((db) => db.from("events").select("*").eq("status", "published").order("starts_at", { ascending: false, nullsFirst: true }).limit(200) as unknown as Query<EventRow>),
 );
 
 export async function getEvent(slug: string) {
@@ -37,7 +36,7 @@ export async function getEvent(slug: string) {
 }
 
 export const listProjects = cache(() =>
-  load<ProjectRow>(sampleProjects, (db) => db.from("projects").select("*").eq("status", "published").order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(200) as unknown as Query<ProjectRow>),
+  load<ProjectRow>((db) => db.from("projects").select("*").eq("status", "published").order("featured", { ascending: false }).order("created_at", { ascending: false }).limit(200) as unknown as Query<ProjectRow>),
 );
 
 export async function getProject(slug: string) {
@@ -46,34 +45,33 @@ export async function getProject(slug: string) {
 }
 
 export const listAnnouncements = cache(() =>
-  load<AnnouncementRow>(sampleAnnouncements, (db) => db.from("announcements").select("*").eq("status", "published").order("pinned", { ascending: false }).order("published_at", { ascending: false, nullsFirst: false }).limit(100) as unknown as Query<AnnouncementRow>),
+  load<AnnouncementRow>((db) => db.from("announcements").select("*").eq("status", "published").order("pinned", { ascending: false }).order("published_at", { ascending: false, nullsFirst: false }).limit(100) as unknown as Query<AnnouncementRow>),
 );
 
 export const listLearning = cache(() =>
-  load<LearningRow>(sampleLearning, (db) => db.from("learning_resources").select("*").eq("status", "published").order("sort_order").order("created_at", { ascending: false }).limit(300) as unknown as Query<LearningRow>),
+  load<LearningRow>((db) => db.from("learning_resources").select("*").eq("status", "published").order("sort_order").order("created_at", { ascending: false }).limit(300) as unknown as Query<LearningRow>),
 );
 
-/** People are never sampled: with no backend this is simply empty. */
 export const listTeam = cache(() =>
-  load<TeamRow>([], (db) => db.from("team_members").select("*").eq("visible", true).eq("consent_confirmed", true).order("sort_order").order("name").limit(500) as unknown as Query<TeamRow>),
+  load<TeamRow>((db) => db.from("team_members").select("*").eq("visible", true).eq("consent_confirmed", true).order("sort_order").order("name").limit(500) as unknown as Query<TeamRow>),
 );
 
 /** The chapter's working teams (Event Management, Marketing…), as the command centre orders them. */
 export const listTeams = cache(() =>
-  load<TeamUnitRow>([], (db) => db.from("teams").select("*").eq("visible", true).order("sort_order").order("name").limit(100) as unknown as Query<TeamUnitRow>),
+  load<TeamUnitRow>((db) => db.from("teams").select("*").eq("visible", true).order("sort_order").order("name").limit(100) as unknown as Query<TeamUnitRow>),
 );
 
 export const listAchievements = cache(() =>
-  load<AchievementRow>([], (db) => db.from("achievements").select("*").eq("status", "published").order("achieved_on", { ascending: false, nullsFirst: false }).limit(200) as unknown as Query<AchievementRow>),
+  load<AchievementRow>((db) => db.from("achievements").select("*").eq("status", "published").order("achieved_on", { ascending: false, nullsFirst: false }).limit(200) as unknown as Query<AchievementRow>),
 );
 
 export const listAlbums = cache(() =>
-  load<AlbumRow>([], (db) => db.from("gallery_albums").select("*").eq("status", "published").order("sort_order").order("created_at", { ascending: false }).limit(200) as unknown as Query<AlbumRow>),
+  load<AlbumRow>((db) => db.from("gallery_albums").select("*").eq("status", "published").order("sort_order").order("created_at", { ascending: false }).limit(200) as unknown as Query<AlbumRow>),
 );
 
 /** Published photographs: consent recorded, and in a published album or event. */
 export const listMedia = cache(() =>
-  load<MediaRow>([], (db) => db.from("gallery_items").select("*").eq("consent_confirmed", true).order("featured", { ascending: false }).order("sort_order").order("created_at", { ascending: false }).limit(600) as unknown as Query<MediaRow>),
+  load<MediaRow>((db) => db.from("gallery_items").select("*").eq("consent_confirmed", true).order("featured", { ascending: false }).order("sort_order").order("created_at", { ascending: false }).limit(600) as unknown as Query<MediaRow>),
 );
 
 export async function registrationCount(eventId: string): Promise<number | null> {
@@ -103,7 +101,7 @@ export type SearchHit = { kind: "Event" | "Project" | "Announcement" | "Learning
 export async function searchAll(query: string): Promise<{ source: Loaded<unknown>["source"]; hits: SearchHit[] }> {
   const q = query.trim().toLowerCase().slice(0, 80);
   const [events, projects, announcements, learning] = await Promise.all([listEvents(), listProjects(), listAnnouncements(), listLearning()]);
-  const source = [events, projects, announcements, learning].some((l) => l.source === "sample") ? "sample" : events.source;
+  const source = [events, projects, announcements, learning].some((l) => l.source === "error") ? "error" : events.source;
   if (q.length < 2) return { source, hits: [] };
   const has = (...parts: (string | null | undefined)[]) => parts.some((p) => p?.toLowerCase().includes(q));
   const hits: SearchHit[] = [

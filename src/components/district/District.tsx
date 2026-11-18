@@ -152,7 +152,6 @@ export function Reception({ id, digest }: { id: TerritoryId; digest: DistrictDig
               {digest.source === "error" ? "The displays could not be loaded right now." : "The displays light up as soon as the chapter publishes content here."}
             </p>
           )}
-          {digest.source === "sample" && <p className="mt-3 font-mono text-[0.58rem] tracking-[0.14em] text-warning uppercase">Sample data</p>}
         </div>
       </div>
 
@@ -236,10 +235,10 @@ export function SourceNotice({ source, what }: { source: Source; what: string })
         The {what} could not be loaded just now. Please refresh in a moment.
       </Notice>
     );
-  if (source === "sample")
+  if (source === "offline")
     return (
-      <Notice tone="warning" title="Sample data" className="mb-8 max-w-3xl">
-        These {what} are demonstration entries shown while the site&apos;s database is not connected. Real {what} are published from the ACM MIT admin centre.
+      <Notice tone="info" title="Not connected yet" className="mb-8 max-w-3xl">
+        The {what} appear here once the site&apos;s database is connected. They are published from the ACM MIT admin centre.
       </Notice>
     );
   return null;

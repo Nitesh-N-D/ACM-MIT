@@ -43,7 +43,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     listProjects(),
     listAlbums(),
   ]);
-  // Sample content (no database) is never offered to search engines.
+  // Only rows read from the database are offered to search engines.
   const live = <T>(l: { source: string; items: T[] }) =>
     l.source === "live" ? l.items : [];
 

@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { PhotoGrid } from "@/components/content/PhotoGrid";
-import { DistrictPage, DistrictSection, SourceNotice } from "@/components/district/District";
+import { DistrictPage, DistrictSection } from "@/components/district/District";
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
 import { getAlbum } from "@/lib/data/gallery";
@@ -27,7 +27,8 @@ export default async function Page({ params }: Props) {
   const { slug } = await params;
   const { source, album, photos } = await getAlbum(slug);
   if (!album) {
-    if (source === "error") return <SourceNotice source="error" what="album" />;
+    // A failed read is not a missing page: let the error boundary offer a retry.
+    if (source === "error") throw new Error("The gallery is temporarily unavailable.");
     notFound();
   }
   const event = album.event_id ? (await listEvents()).items.find((e) => e.id === album.event_id) : undefined;

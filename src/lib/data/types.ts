@@ -80,10 +80,10 @@ export type MediaRow = {
 };
 
 /**
- * Where a list came from. "sample" means no backend is connected and the
- * items are labelled demonstration content, never chapter information.
+ * Where a list came from. "offline" means no database is configured, so the
+ * list is empty; "error" means the database could not be reached.
  */
-export type Source = "live" | "sample" | "error";
+export type Source = "live" | "offline" | "error";
 export type Loaded<T> = { source: Source; items: T[] };
 
 export type HomeSettings = { heading?: string; subheading?: string; tagline?: string; featuredNote?: string };

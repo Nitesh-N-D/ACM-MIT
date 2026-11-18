@@ -77,6 +77,28 @@ test.describe("detail pages", () => {
   }
 });
 
+test("lists never show invented entries, and unknown records show not-found", async ({
+  page,
+  context,
+  baseURL,
+}) => {
+  await context.addCookies([{ name: "nexus-view", value: "2d", url: baseURL! }]);
+  for (const list of ["/events", "/vault", "/announcements", "/learning"]) {
+    await page.goto(list);
+    // No demonstration content: either real records, or an honest state.
+    await expect(page.getByText(/sample data|sample event|sample project/i), list).toHaveCount(0);
+  }
+  // Streamed pages keep a 200 status (Next.js sends it before the record is
+  // looked up), so check what visitors and crawlers get: the not-found page
+  // and a noindex tag.
+  for (const path of ["/events/no-such-event", "/vault/no-such-project", "/gallery/no-such-album"]) {
+    const res = await page.goto(path);
+    expect(res?.status(), path).toBeLessThan(500);
+    await expect(page.locator("h1").first(), path).toHaveText(/Signal lost/);
+    expect(await page.locator('meta[name="robots"][content*="noindex"]').count(), path).toBeGreaterThan(0);
+  }
+});
+
 test("an unknown address shows the not-found page", async ({ page }) => {
   const res = await page.goto("/this-page-does-not-exist");
   expect(res?.status()).toBe(404);

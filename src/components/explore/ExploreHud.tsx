@@ -185,7 +185,6 @@ export function ExploreHud({
             <div className="mt-4 border-t border-line pt-3">
               <p className="font-mono text-[0.6rem] tracking-[0.2em] text-dim uppercase">
                 {hall ? digest.label : indoors ? "On the displays" : digest.label}
-                {digest.source === "sample" && " · sample data"}
               </p>
               {digest.items.length > 0 ? (
                 <ul className="mt-2 space-y-1.5">

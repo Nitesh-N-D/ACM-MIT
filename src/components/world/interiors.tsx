@@ -208,7 +208,7 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
   x.fillStyle = hexA(t.accent, 0.95);
   x.font = `600 26px ${FONT}`;
   const statement = hall.feed === "mission" || hall.feed === "vision";
-  if (board && !statement) x.fillText(`${count} ${count === 1 ? "ITEM" : "ITEMS"}${board.source === "sample" && count > 0 ? " · SAMPLE DATA" : ""}`, MAIN.w - 64, 168);
+  if (board && !statement) x.fillText(`${count} ${count === 1 ? "ITEM" : "ITEMS"}`, MAIN.w - 64, 168);
   x.textAlign = "left";
 
   // People halls show a wall of portraits; their photographs are drawn in as they arrive.

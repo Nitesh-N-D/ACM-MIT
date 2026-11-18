@@ -16,8 +16,7 @@ const GROUPS: { kind: LearningRow["kind"]; title: string; eyebrow: string }[] = 
 export async function RealmPage({ id, realm, title }: { id: Extract<TerritoryId, "intelligence" | "frontier">; realm: "intelligence" | "technology"; title: string }) {
   const [settings, learning] = await Promise.all([getSettings(), listLearning()]);
   const t = getTerritory(id);
-  // Sample entries are realm-agnostic; show them so the layout is reviewable.
-  const items = learning.items.filter((l) => l.realm === realm || (learning.source === "sample" && l.realm === "general"));
+  const items = learning.items.filter((l) => l.realm === realm);
 
   return (
     <DistrictPage

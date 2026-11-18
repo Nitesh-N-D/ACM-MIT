@@ -32,7 +32,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { slug } = await params;
   const { source, event } = await getEvent(slug);
-  if (!event) notFound();
+  if (!event) {
+    // A failed read is not a missing page: let the error boundary offer a retry.
+    if (source === "error") throw new Error("Events are temporarily unavailable.");
+    notFound();
+  }
 
   const [session, count, media] = await Promise.all([getViewer(), source === "live" ? registrationCount(event.id) : Promise.resolve(null), listMedia()]);
   let mine: MyRegistration = null;

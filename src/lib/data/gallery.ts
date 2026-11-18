@@ -20,7 +20,7 @@ const cover = (items: MediaRow[]) => {
 /** Published albums and per-event photograph sets, each with a cover and a count. Consent is enforced by the query and RLS. */
 export async function galleryIndex(): Promise<{ source: Source; albums: AlbumCard[]; events: EventSet[] }> {
   const [albums, media, events] = await Promise.all([listAlbums(), listMedia(), listEvents()]);
-  const source: Source = [albums, media].some((l) => l.source === "error") ? "error" : albums.source === "live" ? "live" : "sample";
+  const source: Source = [albums, media].some((l) => l.source === "error") ? "error" : albums.source;
   const inAlbum = (id: string) => media.items.filter((m) => m.album_id === id);
   return {
     source,

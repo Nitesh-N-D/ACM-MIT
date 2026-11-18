@@ -28,7 +28,11 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function Page({ params }: Props) {
   const { slug } = await params;
   const { source, project } = await getProject(slug);
-  if (!project) notFound();
+  if (!project) {
+    // A failed read is not a missing page: let the error boundary offer a retry.
+    if (source === "error") throw new Error("Projects are temporarily unavailable.");
+    notFound();
+  }
 
   const img = mediaUrl(project.image_path);
   const { items } = await listProjects();

@@ -156,8 +156,8 @@ export async function TopicHallPage({ id, hall }: { id: TerritoryId; hall: Topic
       />
 
       <Container className="py-12 sm:py-16">
-        {/* "Sample data" only labels sample items; an empty hall says so on its own. */}
-        <SourceNotice source={source === "sample" && count === 0 ? "live" : source} what={what} />
+        {/* An empty hall says so on its own; only a failed load adds a notice. */}
+        <SourceNotice source={source === "offline" ? "live" : source} what={what} />
         {count > 0
           ? sections.map((s) => (
               <DistrictSection

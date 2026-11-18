@@ -119,7 +119,7 @@ function matcher(words: string[]) {
   return (...texts: (string | null | undefined)[]) => texts.some((t) => t && re.test(t));
 }
 
-const worst = (...s: Source[]): Source => (s.includes("error") ? "error" : s.includes("sample") ? "sample" : "live");
+const worst = (...s: Source[]): Source => (s.includes("error") ? "error" : s.includes("offline") ? "offline" : "live");
 
 function contentOf(id: TerritoryId, hall: TopicHall, data: Data): HallContent {
   const fed = feedOf(hall, data);
