@@ -12,7 +12,9 @@
     "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
-    "check": "npm run typecheck && npm run lint"
+    "check": "npm run typecheck && npm run lint",
+    "test:e2e": "playwright test",
+    "test:e2e:report": "playwright show-report tmp/playwright-report"
   },
   "dependencies": {
     "@react-three/drei": "10.7.9",
