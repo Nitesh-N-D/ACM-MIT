@@ -55,6 +55,11 @@ export function parseRecord(
         const v = f.url(name, label, required);
         if (v && field.https && !v.startsWith("https://"))
           f.errors[name] = `${label} must start with https://.`;
+        else if (v && field.hosts) {
+          const host = new URL(v).hostname.toLowerCase();
+          if (!field.hosts.some((h) => host === h || host.endsWith(`.${h}`)))
+            f.errors[name] = `${label} must be a ${field.hosts.join(" or ")} link.`;
+        }
         payload[name] = v;
         break;
       }
@@ -267,9 +272,9 @@ export async function mediaUsage(db: Db, path: string): Promise<string[]> {
   return found;
 }
 
-/** Options for event and album pickers. */
+/** Options for event, album and team pickers. */
 export async function refOptions(db: Db) {
-  const [events, albums] = await Promise.all([
+  const [events, albums, teams] = await Promise.all([
     db
       .from("events")
       .select("id, title, starts_at")
@@ -280,6 +285,12 @@ export async function refOptions(db: Db) {
       .select("id, title")
       .order("created_at", { ascending: false })
       .limit(300),
+    db
+      .from("teams")
+      .select("id, name")
+      .order("sort_order")
+      .order("name")
+      .limit(100),
   ]);
   return {
     events: (events.data ?? []).map((e) => ({
@@ -289,6 +300,10 @@ export async function refOptions(db: Db) {
     albums: (albums.data ?? []).map((a) => ({
       value: a.id as string,
       label: a.title as string,
+    })),
+    teams: (teams.data ?? []).map((t) => ({
+      value: t.id as string,
+      label: t.name as string,
     })),
   };
 }

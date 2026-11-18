@@ -16,6 +16,9 @@ const SECTIONS = [
   "/admin/settings",
   "/admin/activity",
   "/admin/exports",
+  "/admin/team",
+  "/admin/teams",
+  "/admin/teams/new",
 ];
 
 test("every command-centre page turns a signed-out visitor away", async ({
@@ -58,6 +61,20 @@ test("the access-denied page explains itself", async ({ page }) => {
   const res = await page.goto("/admin/denied?reason=not-configured");
   expect(res?.status()).toBe(200);
   await expect(page.locator("h1").first()).toBeVisible();
+});
+
+test("the administrator sign-in page loads and never echoes a password", async ({
+  page,
+}) => {
+  const res = await page.goto("/admin/sign-in");
+  expect(res?.status()).toBe(200);
+  await expect(page.locator("h1").first()).toHaveText(/Administrator sign-in/);
+  // With a database the form is shown; without one, a notice says so.
+  const password = page.locator('input[name="password"]');
+  if (await password.count()) {
+    await expect(password).toHaveAttribute("type", "password");
+    await expect(password).toHaveAttribute("autocomplete", "current-password");
+  }
 });
 
 test("members' pages ask a signed-out visitor to sign in", async ({

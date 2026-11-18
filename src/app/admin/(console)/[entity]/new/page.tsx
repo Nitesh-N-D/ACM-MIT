@@ -31,7 +31,7 @@ export default async function Page({ params }: Props) {
   const needsRefs = def.fields.some((f) => f.type === "ref");
   const [images, refs] = await Promise.all([
     needsImages ? approvedImages(db, mediaUrl) : [],
-    needsRefs ? refOptions(db) : { events: [], albums: [] },
+    needsRefs ? refOptions(db) : { events: [], albums: [], teams: [] },
   ]);
 
   return (

@@ -49,10 +49,15 @@ export type TeamRow = {
   linkedin_url: string | null;
   github_url: string | null;
   website_url: string | null;
+  /** The working team this person belongs to, if any (Event Management…). */
+  team_id: string | null;
   active: boolean;
   visible: boolean;
   consent_confirmed: boolean;
 };
+
+/** A working team created in the command centre (Event Management, Marketing…). */
+export type TeamUnitRow = { id: string; slug: string; name: string; description: string; sort_order: number; visible: boolean };
 
 export type AchievementRow = { id: string; title: string; description: string; category: string; achieved_on: string | null; image_path: string | null; status: Status };
 

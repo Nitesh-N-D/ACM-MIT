@@ -32,9 +32,11 @@ export type FieldDef = {
   min?: number;
   options?: Option[];
   /** For "ref": which list supplies the options. */
-  ref?: "events" | "albums";
+  ref?: "events" | "albums" | "teams";
   /** For "url": only https links are accepted. */
   https?: boolean;
+  /** For "url": the link must point at one of these sites (and their subdomains). */
+  hosts?: string[];
   hint?: string;
   /** Spans the full form width. */
   wide?: boolean;
@@ -56,7 +58,8 @@ export type EntityKey =
   | "achievements"
   | "team"
   | "heritage"
-  | "albums";
+  | "albums"
+  | "teams";
 
 export type EntityDef = {
   key: EntityKey;
@@ -406,9 +409,10 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
   team: {
     key: "team",
     table: "team_members",
-    label: "Team",
+    label: "People",
     singular: "person",
-    description: "Office bearers, core team, volunteers, faculty and alumni.",
+    description:
+      "Office bearers, core team, volunteers, faculty and alumni, with their photograph and LinkedIn. Put a person in a team to show them with it.",
     roles: CONTENT,
     title: "name",
     search: ["name", "position", "tenure"],
@@ -426,6 +430,7 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       { name: "name", label: "Name" },
       { name: "position", label: "Position" },
       { name: "group_kind", label: "Group" },
+      { name: "image_path", label: "Photo", kind: "bool" },
       { name: "consent_confirmed", label: "Consent", kind: "bool" },
       { name: "visible", label: "Shown", kind: "bool" },
     ],
@@ -448,6 +453,13 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
         ],
       },
       {
+        name: "team_id",
+        label: "Team",
+        type: "ref",
+        ref: "teams",
+        hint: "Optional: Event Management, Marketing… Create teams under Teams.",
+      },
+      {
         name: "tenure",
         label: "Tenure",
         type: "text",
@@ -461,7 +473,14 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
         max: 2000,
         wide: true,
       },
-      { name: "linkedin_url", label: "LinkedIn", type: "url", https: true },
+      {
+        name: "linkedin_url",
+        label: "LinkedIn",
+        type: "url",
+        https: true,
+        hosts: ["linkedin.com"],
+        hint: "Optional. Shown under the photograph so visitors can connect, e.g. https://www.linkedin.com/in/name.",
+      },
       { name: "github_url", label: "GitHub", type: "url", https: true },
       { name: "website_url", label: "Website", type: "url", https: true },
       sort,
@@ -632,6 +651,50 @@ export const ENTITIES: Record<EntityKey, EntityDef> = {
       status(
         "Photographs inside appear only once their consent is confirmed in the media library.",
       ),
+    ],
+  },
+  teams: {
+    key: "teams",
+    table: "teams",
+    label: "Teams",
+    singular: "team",
+    description:
+      "The chapter's working teams (Event Management, Marketing, Design…). Each visible team gets its own section on the team page and in the Sanctuary's Teams room in 3D; add people to it from People.",
+    roles: CONTENT,
+    title: "name",
+    search: ["name", "description"],
+    order: [
+      { column: "sort_order", ascending: true },
+      { column: "name", ascending: true },
+    ],
+    publicPath: (r) => (r.visible ? `/team#team-${r.slug}` : null),
+    columns: [
+      { name: "name", label: "Name" },
+      { name: "slug", label: "Address" },
+      { name: "visible", label: "Shown", kind: "bool" },
+    ],
+    fields: [
+      { name: "name", label: "Team name", type: "text", required: true, max: 120 },
+      {
+        name: "slug",
+        label: "Web address",
+        type: "slug",
+        hint: "Left empty, it is made from the name.",
+      },
+      {
+        name: "description",
+        label: "What the team does",
+        type: "textarea",
+        max: 1000,
+        wide: true,
+      },
+      sort,
+      {
+        name: "visible",
+        label: "Show on the website",
+        type: "checkbox",
+        initial: true,
+      },
     ],
   },
 };

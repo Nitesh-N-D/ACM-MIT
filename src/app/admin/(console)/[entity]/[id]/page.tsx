@@ -56,7 +56,7 @@ export default async function Page({ params, searchParams }: Props) {
   const needsRefs = def.fields.some((f) => f.type === "ref");
   const [images, refs] = await Promise.all([
     needsImages ? approvedImages(db, mediaUrl) : [],
-    needsRefs ? refOptions(db) : { events: [], albums: [] },
+    needsRefs ? refOptions(db) : { events: [], albums: [], teams: [] },
   ]);
   const title = String(row[def.title] ?? def.singular);
   const live = def.publicPath?.(row);

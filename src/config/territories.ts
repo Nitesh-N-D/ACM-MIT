@@ -83,7 +83,7 @@ export const territories: Territory[] = [
     accent: "#d8b25e",
     purpose: "The people and history of ACM MIT",
     description: "A monumental archive where every member's contribution becomes a star in the constellation.",
-    topics: ["Committee", "Core Team", "Alumni", "Achievements", "Milestones"],
+    topics: ["Committee", "Core Team", "Teams", "Alumni", "Achievements", "Milestones"],
   },
 ];
 

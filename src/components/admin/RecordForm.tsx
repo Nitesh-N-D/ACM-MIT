@@ -17,7 +17,7 @@ type Props = {
   values: Record<string, string>;
   checks: Record<string, boolean>;
   images: PickerImage[];
-  refs: { events: Option[]; albums: Option[] };
+  refs: { events: Option[]; albums: Option[]; teams: Option[] };
   submitLabel: string;
 };
 
@@ -71,7 +71,7 @@ function FieldControl({
     case "select":
       return <SelectField {...common} options={field.options ?? []} />;
     case "ref": {
-      const list = field.ref === "albums" ? refs.albums : refs.events;
+      const list = field.ref === "albums" ? refs.albums : field.ref === "teams" ? refs.teams : refs.events;
       return <SelectField {...common} options={[{ value: "", label: "None" }, ...list]} />;
     }
     case "checkbox":

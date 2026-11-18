@@ -26,12 +26,12 @@ export function PageHeader({ eyebrow, title, description, breadcrumbs, accent, a
         className="absolute inset-x-0 bottom-0 h-px bg-linear-to-r from-transparent via-(--accent,var(--color-cyan))/50 to-transparent"
       />
       <Container className="relative grid gap-10 lg:grid-cols-[1fr_auto] lg:items-end">
-        <div>
+        <div className="min-w-0">
           {breadcrumbs && <Breadcrumbs items={breadcrumbs} />}
           <p className="eyebrow mt-8" style={accent ? { color: accent } : undefined}>
             {eyebrow}
           </p>
-          <h1 className="mt-5 max-w-4xl font-display text-title font-semibold">{title}</h1>
+          <h1 className="mt-5 max-w-4xl font-display text-title font-semibold wrap-break-word hyphens-auto">{title}</h1>
           {description && <div className="mt-6 max-w-2xl text-lg leading-relaxed text-muted">{description}</div>}
           {children}
         </div>

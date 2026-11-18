@@ -18,6 +18,7 @@ const WHAT: Partial<Record<HallFeed, string>> = {
   projects: "projects",
   committee: "team profiles",
   "core-team": "team profiles",
+  teams: "team profiles",
   alumni: "alumni profiles",
   achievements: "achievements",
   milestones: "milestones",
@@ -31,6 +32,7 @@ function emptyText(id: TerritoryId, hall: TopicHall) {
       return `The chapter has not published its ${hall.feed} here yet.`;
     case "committee":
     case "core-team":
+    case "teams":
     case "alumni":
       return "Each profile is published only after that person has given permission, so this hall fills in as consent is recorded.";
     case undefined:
@@ -163,6 +165,7 @@ export async function TopicHallPage({ id, hall }: { id: TerritoryId; hall: Topic
                 id={s.id}
                 eyebrow={s.eyebrow}
                 title={s.title}
+                description={s.description}
                 action={
                   hall.more && (
                     <Button href={hall.more.href} variant="ghost" size="sm">

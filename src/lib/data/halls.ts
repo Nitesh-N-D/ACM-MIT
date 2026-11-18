@@ -4,15 +4,16 @@ import type { HeritageEntry } from "@/config/heritage";
 import { HALLS, hallHref, type TopicHall } from "@/config/topics";
 import { formatDate } from "@/lib/validate";
 import { sortEvents, type DigestItem } from "./districts";
-import { getSettings, listAchievements, listAnnouncements, listEvents, listHeritage, listLearning, listProjects, listTeam } from "./public";
-import type { AchievementRow, AnnouncementRow, EventRow, LearningRow, Loaded, ProjectRow, SettingsMap, Source, TeamRow } from "./types";
+import { getSettings, listAchievements, listAnnouncements, listEvents, listHeritage, listLearning, listProjects, listTeam, listTeams } from "./public";
+import { mediaUrl } from "@/lib/supabase/env";
+import type { AchievementRow, AnnouncementRow, EventRow, LearningRow, Loaded, ProjectRow, SettingsMap, Source, TeamRow, TeamUnitRow } from "./types";
 
 /**
  * What each topic hall holds. One source for both the hall's page and the
  * boards of its room in the 3D world, so the two always agree.
  */
 
-type Section<K extends string, T> = { id: string; eyebrow: string; title: string; kind: K; items: T[] };
+type Section<K extends string, T> = { id: string; eyebrow: string; title: string; kind: K; items: T[]; description?: string };
 /** A statement published by the chapter (its mission or vision). */
 export type HallText = { id: string; body: string };
 export type HallSection =
@@ -33,18 +34,20 @@ type Data = {
   achievements: Loaded<AchievementRow>;
   announcements: Loaded<AnnouncementRow>;
   team: Loaded<TeamRow>;
+  teams: Loaded<TeamUnitRow>;
   milestones: Loaded<HeritageEntry>;
   settings: SettingsMap;
 };
 
 async function load(): Promise<Data> {
-  const [events, projects, learning, achievements, announcements, team, heritage, settings] = await Promise.all([
+  const [events, projects, learning, achievements, announcements, team, teams, heritage, settings] = await Promise.all([
     listEvents(),
     listProjects(),
     listLearning(),
     listAchievements(),
     listAnnouncements(),
     listTeam(),
+    listTeams(),
     listHeritage(),
     getSettings(),
   ]);
@@ -54,7 +57,7 @@ async function load(): Promise<Data> {
     source: "live",
     items: heritage.items.filter((h) => h.gallery === "chapter").sort((a, b) => (a.year ?? 9999) - (b.year ?? 9999) || a.sort_order - b.sort_order),
   };
-  return { events, projects, learning, achievements, announcements, team, milestones, settings };
+  return { events, projects, learning, achievements, announcements, team, teams, milestones, settings };
 }
 
 type Fed = { source: Source; sections: HallSection[] };
@@ -82,6 +85,8 @@ function feedOf(hall: TopicHall, data: Data): Fed | null {
       return people("committee", "Office bearers", "Committee", true);
     case "core-team":
       return people("core", "Builders", "Core team", true);
+    case "teams":
+      return { source: data.team.source, sections: teamSections(data.teams.items, data.team.items) };
     case "alumni":
       return people("alumni", "Those before us", "Alumni", false);
     case "achievements":
@@ -91,6 +96,20 @@ function feedOf(hall: TopicHall, data: Data): Fed | null {
     default:
       return null;
   }
+}
+
+/** One section per working team, with its current members (teams with nobody in them yet are left out). */
+export function teamSections(teams: TeamUnitRow[], people: TeamRow[]): Extract<HallSection, { kind: "people" }>[] {
+  return teams
+    .map((t) => ({
+      id: `team-${t.slug}`,
+      eyebrow: "Team",
+      title: t.name,
+      description: t.description || undefined,
+      kind: "people" as const,
+      items: people.filter((p) => p.team_id === t.id && p.active && p.group_kind !== "alumni"),
+    }))
+    .filter((s) => s.items.length > 0);
 }
 
 /** Whole-word, case-insensitive match of any of the hall's words. */
@@ -164,7 +183,9 @@ export type HallBoard = {
   blurb: string;
   source: Source;
   count: number;
-  items: (DigestItem & { kind: string })[];
+  items: (DigestItem & { kind: string; image?: string })[];
+  /** The board shows portraits (people halls) instead of text tiles. */
+  portraits?: boolean;
   /** A statement the main display shows in full instead of tiles (Mission, Vision). */
   text?: string;
 };
@@ -172,6 +193,9 @@ export type HallBoard = {
 export type HallBoards = Record<string, HallBoard>;
 
 export const BOARD_ITEMS = 6;
+
+/** Halls of people: their room shows a wall of portraits. */
+const PORTRAIT_FEEDS = new Set(["committee", "core-team", "teams", "alumni"]);
 
 /** Where an item with no page of its own opens: its card on the hall's page. */
 const onHallPage = (page: string, anchor: string) => `${page}#${anchor}`;
@@ -191,7 +215,16 @@ function boardItems(content: HallContent, page: string): HallBoard["items"] {
         case "announcements":
           return s.items.map((a) => ({ kind: a.pinned ? "Pinned" : "Announcement", title: a.title, meta: formatDate(a.published_at ?? a.created_at), href: `/announcements#${a.slug}` }));
         case "people":
-          return s.items.map((p) => ({ kind: p.position || "Member", title: p.name, meta: p.tenure, href: onHallPage(page, `person-${p.id}`) }));
+          // A person opens their LinkedIn when they have one, otherwise their card.
+          return s.items.map((p) => ({
+            // In the Teams hall the tile names the team; elsewhere the person's role.
+            kind: s.id.startsWith("team-") ? s.title : p.position || "Member",
+            title: p.name,
+            meta: s.id.startsWith("team-") ? p.position : p.tenure,
+            href: p.linkedin_url ?? onHallPage(page, `person-${p.id}`),
+            external: Boolean(p.linkedin_url),
+            image: (p.image_path && mediaUrl(p.image_path)) || undefined,
+          }));
         case "milestones":
           return s.items.map((m) => ({ kind: m.date_label || (m.year ? String(m.year) : "Milestone"), title: m.title, meta: m.source_label, href: onHallPage(page, `milestone-${m.id}`) }));
         case "text":
@@ -209,7 +242,7 @@ export async function hallBoards(): Promise<HallBoards> {
     for (const hall of halls) {
       const content = contentOf(id, hall, data);
       const text = content.sections.find((s) => s.kind === "text")?.items[0]?.body;
-      out[`${id}/${hall.slug}`] = { name: hall.name, blurb: hall.blurb, source: content.source, count: content.count, items: boardItems(content, hallHref(id, hall.slug)), text };
+      out[`${id}/${hall.slug}`] = { name: hall.name, blurb: hall.blurb, source: content.source, count: content.count, items: boardItems(content, hallHref(id, hall.slug)), text, portraits: PORTRAIT_FEEDS.has(hall.feed ?? "") || undefined };
     }
   }
   return out;

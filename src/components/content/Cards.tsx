@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { Badge, type BadgeTone } from "@/components/ui/Badge";
 import { Card } from "@/components/ui/Card";
 import type { AchievementRow, AnnouncementRow, EventRow, LearningRow, ProjectRow, TeamRow } from "@/lib/data/types";
@@ -157,42 +157,86 @@ function initials(name: string) {
 }
 
 /** A person, shown only with recorded consent (enforced by the query and RLS). */
-export function PersonCard({ person, accent = "#d8b25e" }: { person: TeamRow; accent?: string }) {
+export function PersonCard({ person, accent = "#d8b25e", team }: { person: TeamRow; accent?: string; team?: string }) {
   const img = mediaUrl(person.image_path);
   const links = [
-    { href: person.linkedin_url, label: "LinkedIn" },
     { href: person.github_url, label: "GitHub" },
     { href: person.website_url, label: "Website" },
   ].filter((l): l is { href: string; label: string } => Boolean(l.href));
   return (
-    <article className="nexus-frame flex h-full flex-col p-5">
-      <div className="flex items-center gap-4">
+    <article className="nexus-frame group flex h-full flex-col overflow-hidden" style={{ "--accent": accent } as CSSProperties}>
+      {/* Portrait, with the name set over its lower edge */}
+      <div className="relative aspect-4/5 overflow-hidden bg-void">
         {img ? (
-          <Image src={img} alt={`Portrait of ${person.name}`} width={96} height={96} sizes="64px" className="size-16 shrink-0 border border-line object-cover" />
+          <Image
+            src={img}
+            alt={`Portrait of ${person.name}`}
+            fill
+            sizes="(min-width: 1280px) 22vw, (min-width: 1024px) 30vw, (min-width: 640px) 45vw, 92vw"
+            className="object-cover transition-transform duration-700 ease-(--ease-nexus) group-hover:scale-[1.04] motion-reduce:transition-none motion-reduce:group-hover:scale-100"
+          />
         ) : (
-          <span aria-hidden="true" className="grid size-16 shrink-0 place-items-center border font-display text-lg" style={{ borderColor: `${accent}66`, color: accent }}>
-            {initials(person.name)}
+          <div
+            aria-hidden="true"
+            className="grid h-full place-items-center"
+            style={{ background: `radial-gradient(circle at 50% 38%, ${accent}33, transparent 62%), linear-gradient(180deg, #0b1226, #050812)` }}
+          >
+            <span className="grid size-28 place-items-center rounded-full border font-display text-4xl" style={{ borderColor: `${accent}88`, color: accent, boxShadow: `0 0 32px ${accent}33` }}>
+              {initials(person.name)}
+            </span>
+          </div>
+        )}
+        <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-linear-to-t from-void via-void/70 to-transparent" />
+        {team && (
+          <span className="absolute top-3 left-3 border bg-void/80 px-2 py-1 font-mono text-[0.6rem] tracking-[0.16em] uppercase backdrop-blur-sm" style={{ borderColor: `${accent}66`, color: accent }}>
+            {team}
           </span>
         )}
-        <div className="min-w-0">
-          <h3 className="font-display text-base text-ice">{person.name}</h3>
-          {person.position && <p className="mt-0.5 text-sm text-silver">{person.position}</p>}
-          {person.tenure && <p className="mt-0.5 font-mono text-[0.62rem] tracking-[0.14em] text-dim uppercase">{person.tenure}</p>}
+        <div className="absolute inset-x-0 bottom-0 p-4">
+          <h3 className="font-display text-lg leading-tight text-ice">{person.name}</h3>
+          {person.position && <p className="mt-1 text-sm text-silver">{person.position}</p>}
         </div>
       </div>
-      {person.bio && <p className="mt-4 text-sm leading-relaxed text-muted">{person.bio}</p>}
-      {links.length > 0 && (
-        <ul className="mt-4 flex flex-wrap gap-x-4 gap-y-1">
-          {links.map((l) => (
-            <li key={l.label}>
-              <a href={l.href} {...ext} className="font-mono text-[0.64rem] tracking-[0.16em] uppercase hover:text-ice" style={{ color: accent }}>
-                {l.label} ↗<span className="sr-only"> — {person.name} (opens in a new tab)</span>
-              </a>
-            </li>
-          ))}
-        </ul>
+
+      {/* LinkedIn, right under the photograph: one tap to connect */}
+      {person.linkedin_url && (
+        <a
+          href={person.linkedin_url}
+          {...ext}
+          className="flex min-h-11 items-center justify-center gap-2 border-y border-line px-4 py-2.5 font-mono text-[0.68rem] tracking-[0.16em] uppercase transition-colors hover:bg-(--accent)/10 focus-visible:bg-(--accent)/10"
+          style={{ color: accent }}
+        >
+          <LinkedInIcon />
+          Connect on LinkedIn<span className="sr-only"> with {person.name} (opens in a new tab)</span>
+        </a>
+      )}
+
+      {(person.tenure || person.bio || links.length > 0) && (
+        <div className="flex flex-1 flex-col p-4">
+          {person.tenure && <p className="font-mono text-[0.62rem] tracking-[0.14em] text-dim uppercase">{person.tenure}</p>}
+          {person.bio && <p className="mt-2 text-sm leading-relaxed text-muted first:mt-0">{person.bio}</p>}
+          {links.length > 0 && (
+            <ul className="mt-auto flex flex-wrap gap-x-4 gap-y-1 pt-3">
+              {links.map((l) => (
+                <li key={l.label}>
+                  <a href={l.href} {...ext} className="inline-block py-1 font-mono text-[0.64rem] tracking-[0.16em] uppercase hover:text-ice" style={{ color: accent }}>
+                    {l.label} ↗<span className="sr-only"> — {person.name} (opens in a new tab)</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       )}
     </article>
+  );
+}
+
+function LinkedInIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M4.98 3.5a2.5 2.5 0 1 1 0 5 2.5 2.5 0 0 1 0-5ZM3 9.75h4v11H3v-11Zm6.5 0h3.83v1.5h.05c.53-1 1.84-2.06 3.79-2.06 4.05 0 4.83 2.66 4.83 6.13v5.43h-4v-4.81c0-1.15-.02-2.62-1.6-2.62-1.6 0-1.85 1.25-1.85 2.54v4.89h-4v-11Z" />
+    </svg>
   );
 }
 

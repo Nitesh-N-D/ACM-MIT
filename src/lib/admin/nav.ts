@@ -43,7 +43,8 @@ export const NAV: NavGroup[] = [
   {
     label: "People & media",
     items: [
-      { href: "/admin/team", label: "Team & alumni", roles: CONTENT },
+      { href: "/admin/team", label: "People & alumni", roles: CONTENT },
+      { href: "/admin/teams", label: "Teams", roles: CONTENT },
       { href: "/admin/media", label: "Media library", roles: STAFF },
       { href: "/admin/albums", label: "Gallery albums", roles: STAFF },
     ],

@@ -246,15 +246,30 @@ export function SourceNotice({ source, what }: { source: Source; what: string })
 }
 
 /** Section heading inside a district page. */
-export function DistrictSection({ id, title, eyebrow, action, children }: { id: string; title: string; eyebrow?: string; action?: ReactNode; children: ReactNode }) {
+export function DistrictSection({
+  id,
+  title,
+  eyebrow,
+  description,
+  action,
+  children,
+}: {
+  id: string;
+  title: string;
+  eyebrow?: string;
+  description?: ReactNode;
+  action?: ReactNode;
+  children: ReactNode;
+}) {
   return (
     <section aria-labelledby={id} className="mt-14 first:mt-0">
       <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-          <h2 id={id} className="mt-2 font-display text-2xl text-ice">
+          <h2 id={id} className="mt-2 scroll-mt-28 font-display text-2xl text-ice">
             {title}
           </h2>
+          {description && <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">{description}</p>}
         </div>
         {action}
       </div>

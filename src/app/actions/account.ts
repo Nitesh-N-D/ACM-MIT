@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
-import { getViewer } from "@/lib/auth/session";
+import { adminAllowlist, getViewer } from "@/lib/auth/session";
 import { siteUrl } from "@/lib/supabase/env";
 import { createClient } from "@/lib/supabase/server";
 import { Form, safeNext, type FormState } from "@/lib/validate";
@@ -41,6 +41,46 @@ export async function requestSignIn(_prev: FormState, data: FormData): Promise<F
     };
   }
   return { ok: true, message: `A sign-in link has been sent to ${email}. Open it on this device to continue. It expires after one hour.` };
+}
+
+/* ------------------------------------------------------------------------ */
+/* Command-centre sign-in (email and password)                               */
+/* ------------------------------------------------------------------------ */
+
+/**
+ * Password sign-in for the chapter's administrators only. Any other account,
+ * or wrong details, get the same answer, and a successful sign-in by a
+ * non-administrator is ended at once. The password is checked by Supabase
+ * Auth and never stored, logged or sent back to the form.
+ */
+export async function adminSignIn(_prev: FormState, data: FormData): Promise<FormState> {
+  const f = new Form(data);
+  const email = f.email("email");
+  const raw = data.get("password");
+  const password = typeof raw === "string" ? raw : "";
+  if (!password) f.errors.password = "Password is required.";
+  else if (password.length > 128) f.errors.password = "Password must be 128 characters or fewer.";
+  const denied: FormState = { ok: false, values: { email }, message: "Those details do not open the command centre." };
+  if (f.isBot()) return denied;
+  if (!f.valid) return { ...f.fail(), values: { email } };
+
+  const db = await createClient();
+  if (!db) return { ...OFFLINE, values: { email } };
+  const { data: auth, error } = await db.auth.signInWithPassword({ email, password });
+  if (error || !auth.user) {
+    const limited = error?.status === 429 || /rate|too many/i.test(error?.message ?? "");
+    return limited ? { ...denied, message: "Too many attempts. Please wait a few minutes and try again." } : denied;
+  }
+
+  // Allowlisted addresses, or accounts a Super Admin has given a staff role.
+  const allowlisted = adminAllowlist().includes((auth.user.email ?? "").toLowerCase());
+  const { data: roles } = await db.from("user_roles").select("role").eq("user_id", auth.user.id).limit(1);
+  if (!allowlisted && !(roles && roles.length > 0)) {
+    await db.auth.signOut();
+    return denied;
+  }
+  revalidatePath("/", "layout");
+  redirect("/admin");
 }
 
 export async function signOut() {

@@ -26,7 +26,7 @@ export type TopicHall = {
 };
 
 /** Halls that show one kind of content instead of matching words. */
-export type HallFeed = "mission" | "vision" | "announcements" | "projects" | "committee" | "core-team" | "alumni" | "achievements" | "milestones";
+export type HallFeed = "mission" | "vision" | "announcements" | "projects" | "committee" | "core-team" | "teams" | "alumni" | "achievements" | "milestones";
 
 export type Topic = { name: string; href: string; hall?: TopicHall };
 
@@ -186,6 +186,7 @@ export const HALLS = {
   sanctuary: [
     feed("committee", "Committee", "The office bearers who lead the chapter, plan its year and speak for it.", "committee", { href: "/team", label: "The whole team" }),
     feed("core-team", "Core Team", "The members who build and run the chapter's events, projects and sessions week after week.", "core-team", { href: "/team", label: "The whole team" }),
+    feed("teams", "Teams", "The chapter's working teams — event management, marketing, design and more — and the people in each.", "teams", { href: "/team#teams", label: "The whole team" }),
     feed("alumni", "Alumni", "Those who built the chapter before us, and where their work has taken them.", "alumni", { href: "/alumni", label: "The alumni page" }),
     feed("achievements", "Achievements", "Prizes, recognitions and results earned by the chapter and its members.", "achievements", { href: "/achievements", label: "All achievements" }),
     feed("milestones", "Milestones", "The moments that shaped the chapter, recorded in its own gallery of the Heritage Archive.", "milestones", { href: "/heritage#chapter", label: "The Heritage Archive" }),

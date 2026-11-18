@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
-import { removeTotp, requestSignIn, startTotp, submitProject, updateProfile, verifyTotp, type Enrolment } from "@/app/actions/account";
+import { adminSignIn, removeTotp, requestSignIn, startTotp, submitProject, updateProfile, verifyTotp, type Enrolment } from "@/app/actions/account";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/States";
 import type { FormState } from "@/lib/validate";
@@ -162,6 +162,22 @@ export function TotpRemove({ factorId }: { factorId: string }) {
       <Button type="submit" variant="ghost" size="sm" disabled={pending}>
         {pending ? "Removing…" : "Remove authenticator app"}
       </Button>
+    </form>
+  );
+}
+
+/** The command centre's own sign-in: email and password, administrators only. */
+export function AdminSignInForm() {
+  const [state, action, pending] = useActionState(adminSignIn, initial);
+  return (
+    <form action={action} noValidate className="space-y-5">
+      <BotTrap />
+      <FormMessage state={state} />
+      <TextField name="email" label="Email address" type="email" autoComplete="username" inputMode="email" required state={state} />
+      <TextField name="password" label="Password" type="password" autoComplete="current-password" required maxLength={128} state={state} defaultValue="" />
+      <Submit pending={pending} busy="Signing in…">
+        Open the command centre
+      </Submit>
     </form>
   );
 }

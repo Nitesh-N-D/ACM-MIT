@@ -1,6 +1,7 @@
 import "server-only";
 import { redirect } from "next/navigation";
 import { cache } from "react";
+import { DEFAULT_ADMIN_EMAILS } from "@/config/admin";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { createClient, type Db } from "@/lib/supabase/server";
 import { ROLES, STAFF, hasAny, type Role } from "./roles";
@@ -15,8 +16,8 @@ export type Viewer = {
 
 /** Allowlist of Super Admin e-mails. Server-side only; never sent to the browser. */
 export function adminAllowlist(): string[] {
-  return (process.env.ADMIN_EMAILS ?? "")
-    .split(",")
+  const configured = process.env.ADMIN_EMAILS?.trim();
+  return (configured ? configured.split(",") : DEFAULT_ADMIN_EMAILS)
     .map((e) => e.trim().toLowerCase())
     .filter((e) => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(e));
 }
@@ -89,7 +90,7 @@ export async function adminAccess(allowed: readonly Role[] = STAFF): Promise<{ o
 export async function requireAdmin(allowed: readonly Role[] = STAFF) {
   const access = await adminAccess(allowed);
   if (access.ok) return access;
-  if (access.reason === "signed-out") redirect("/sign-in?next=/admin");
+  if (access.reason === "signed-out") redirect("/admin/sign-in");
   if (access.reason === "mfa") redirect("/dashboard/security?next=/admin");
   redirect(`/admin/denied?reason=${access.reason}`);
 }

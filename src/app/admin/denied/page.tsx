@@ -11,13 +11,13 @@ const REASONS: Record<AdminDenial, { title: string; body: string; steps?: string
     steps: [
       "Create a Supabase project and run the SQL files in supabase/migrations, in order.",
       "Set NEXT_PUBLIC_SUPABASE_URL, NEXT_PUBLIC_SUPABASE_ANON_KEY and SUPABASE_SERVICE_ROLE_KEY on the server (see .env.example).",
-      "Set ADMIN_EMAILS to the Super Admin's email, then restart the site.",
+      "Create the administrator account in Supabase (Authentication → Users → Add user), then sign in at /admin/sign-in.",
     ],
   },
   "no-allowlist": {
     title: "No administrators are configured",
-    body: "ADMIN_EMAILS is empty, so the command centre stays closed to everyone.",
-    steps: ["Set ADMIN_EMAILS on the server to the Super Admin's email (comma-separated for several), then restart the site."],
+    body: "No administrator addresses are configured, so the command centre stays closed to everyone.",
+    steps: ["Set ADMIN_EMAILS on the server to the Super Admin's email (comma-separated for several), or keep the default in src/config/admin.ts, then restart the site."],
   },
   "signed-out": { title: "Please sign in", body: "Sign in with your chapter account to open the command centre." },
   unverified: {
@@ -51,7 +51,7 @@ export default async function Page({ searchParams }: { searchParams: Promise<{ r
       )}
       <div className="mt-8 flex flex-wrap gap-3">
         {reason === "signed-out" && (
-          <Link className={buttonClasses()} href="/sign-in?next=/admin">
+          <Link className={buttonClasses()} href="/admin/sign-in">
             Sign in
           </Link>
         )}

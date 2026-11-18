@@ -211,8 +211,12 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
   if (board && !statement) x.fillText(`${count} ${count === 1 ? "ITEM" : "ITEMS"}${board.source === "sample" && count > 0 ? " · SAMPLE DATA" : ""}`, MAIN.w - 64, 168);
   x.textAlign = "left";
 
-  const tiles = boardTiles(items.length);
-  tiles.forEach((r, i) => {
+  // People halls show a wall of portraits; their photographs are drawn in as they arrive.
+  const portraits = Boolean(board?.portraits);
+  const texture = canvasTexture(c);
+  const tiles = portraits ? portraitTiles(items.length) : boardTiles(items.length);
+  if (portraits) portraitWall(x, t.accent, tiles, items, texture);
+  else tiles.forEach((r, i) => {
     const item = items[i]!;
     x.fillStyle = hexA(t.accent, 0.1);
     x.fillRect(r.x, r.y, r.w, r.h);
@@ -268,7 +272,127 @@ function hallDisplay(t: Territory, hall: TopicHall, board: HallBoard | undefined
   x.font = `400 22px ${FONT}`;
   const more = count - items.length;
   x.fillText(more > 0 ? `+ ${more} MORE ON THE HALL PAGE — SEE THE LEFT WALL` : "NEXUS · ACM MIT CAMPUS STUDENT CHAPTER", 64, 572);
-  return { texture: canvasTexture(c), rects: tiles };
+  if (portraits && items.some((i) => i.external)) {
+    x.textAlign = "right";
+    x.fillText("TAP A PORTRAIT TO CONNECT ON LINKEDIN", MAIN.w - 64, 572);
+    x.textAlign = "left";
+  }
+  texture.needsUpdate = true;
+  return { texture, rects: tiles };
+}
+
+/** Portrait cards of a people hall: up to six in one row, centred. */
+function portraitTiles(n: number): Rect[] {
+  const w = 224;
+  const gap = 20;
+  const left = (MAIN.w - (n * w + (n - 1) * gap)) / 2;
+  return Array.from({ length: n }, (_, i) => ({ x: left + i * (w + gap), y: 196, w, h: 356 }));
+}
+
+const PORTRAIT_R = 84;
+
+function initialsOf(name: string) {
+  return name
+    .split(/\s+/)
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0]!.toUpperCase())
+    .join("");
+}
+
+/**
+ * Draws the portrait wall: a glowing ring per person joined by a faint line,
+ * the name and role below and a LinkedIn mark when they have one. Each
+ * photograph is fetched through the site's own image optimiser (same origin,
+ * so the canvas stays usable as a texture) and painted in when it loads.
+ */
+function portraitWall(x: CanvasRenderingContext2D, accent: string, rects: Rect[], items: HallBoard["items"], texture: THREE.Texture) {
+  const centre = (r: Rect) => ({ cx: r.x + r.w / 2, cy: r.y + 18 + PORTRAIT_R });
+  // The constellation line behind the portraits.
+  if (rects.length > 1) {
+    x.strokeStyle = hexA(accent, 0.35);
+    x.lineWidth = 2;
+    x.setLineDash([4, 10]);
+    x.beginPath();
+    rects.forEach((r, i) => {
+      const { cx, cy } = centre(r);
+      if (i === 0) x.moveTo(cx, cy);
+      else x.lineTo(cx, cy);
+    });
+    x.stroke();
+    x.setLineDash([]);
+  }
+  rects.forEach((r, i) => {
+    const item = items[i]!;
+    const { cx, cy } = centre(r);
+    // Card
+    const g = x.createLinearGradient(0, r.y, 0, r.y + r.h);
+    g.addColorStop(0, hexA(accent, 0.12));
+    g.addColorStop(1, hexA(accent, 0.02));
+    x.fillStyle = g;
+    x.fillRect(r.x, r.y, r.w, r.h);
+    x.fillStyle = hexA(accent, 0.8);
+    x.fillRect(r.x, r.y + r.h - 4, r.w, 4);
+    // Glowing ring and the monogram shown until (or unless) a photograph loads
+    x.save();
+    x.shadowColor = accent;
+    x.shadowBlur = 28;
+    x.strokeStyle = accent;
+    x.lineWidth = 5;
+    x.beginPath();
+    x.arc(cx, cy, PORTRAIT_R + 6, 0, Math.PI * 2);
+    x.stroke();
+    x.restore();
+    x.fillStyle = "#0a1122";
+    x.beginPath();
+    x.arc(cx, cy, PORTRAIT_R, 0, Math.PI * 2);
+    x.fill();
+    x.fillStyle = accent;
+    x.font = `700 52px ${FONT}`;
+    x.textAlign = "center";
+    x.textBaseline = "middle";
+    x.fillText(initialsOf(item.title), cx, cy + 2);
+    x.textBaseline = "alphabetic";
+    // Name, role (or team) and the LinkedIn mark
+    x.fillStyle = "#f2f6ff";
+    x.font = `700 25px ${FONT}`;
+    wrap(x, item.title, r.w - 24, 2).forEach((l, k) => x.fillText(l, cx, cy + PORTRAIT_R + 44 + k * 28));
+    x.fillStyle = hexA(accent, 0.95);
+    x.font = `700 18px ${FONT}`;
+    x.fillText(wrap(x, item.kind.toUpperCase(), r.w - 24, 1)[0] ?? "", cx, r.y + r.h - 56);
+    if (item.meta) {
+      x.fillStyle = "#a9b3cc";
+      x.font = `500 18px ${FONT}`;
+      x.fillText(wrap(x, item.meta, r.w - 24, 1)[0] ?? "", cx, r.y + r.h - 28);
+    }
+    if (item.external) {
+      x.fillStyle = "#0a66c2";
+      x.fillRect(r.x + r.w - 46, r.y + 12, 34, 34);
+      x.fillStyle = "#ffffff";
+      x.font = `700 21px ${FONT}`;
+      x.fillText("in", r.x + r.w - 29, r.y + 37);
+    }
+    x.textAlign = "left";
+
+    if (!item.image) return;
+    const img = new Image();
+    img.decoding = "async";
+    img.onload = () => {
+      // Cover-fit the photograph into the circle.
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      x.save();
+      x.beginPath();
+      x.arc(cx, cy, PORTRAIT_R, 0, Math.PI * 2);
+      x.clip();
+      // Cover the monogram first, in case the photograph has transparency.
+      x.fillStyle = "#0a1122";
+      x.fillRect(cx - PORTRAIT_R, cy - PORTRAIT_R, PORTRAIT_R * 2, PORTRAIT_R * 2);
+      x.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 4, side, side, cx - PORTRAIT_R, cy - PORTRAIT_R, PORTRAIT_R * 2, PORTRAIT_R * 2);
+      x.restore();
+      texture.needsUpdate = true;
+    };
+    img.src = `/_next/image?url=${encodeURIComponent(item.image)}&w=256&q=75`;
+  });
 }
 
 /** The "open the page" button on a hall's left wall. */

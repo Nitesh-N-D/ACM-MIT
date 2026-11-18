@@ -3,7 +3,7 @@ import { cache } from "react";
 import { HERITAGE_REFERENCE, type HeritageEntry } from "@/config/heritage";
 import { createPublicClient } from "@/lib/supabase/server";
 import { sampleAnnouncements, sampleEvents, sampleLearning, sampleProjects } from "./sample";
-import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, Loaded, MediaRow, ProjectRow, SettingsMap, TeamRow } from "./types";
+import type { AchievementRow, AlbumRow, AnnouncementRow, EventRow, LearningRow, Loaded, MediaRow, ProjectRow, SettingsMap, TeamRow, TeamUnitRow } from "./types";
 
 /**
  * Read side of the public site. Only published rows are requested, and Row
@@ -56,6 +56,11 @@ export const listLearning = cache(() =>
 /** People are never sampled: with no backend this is simply empty. */
 export const listTeam = cache(() =>
   load<TeamRow>([], (db) => db.from("team_members").select("*").eq("visible", true).eq("consent_confirmed", true).order("sort_order").order("name").limit(500) as unknown as Query<TeamRow>),
+);
+
+/** The chapter's working teams (Event Management, Marketing…), as the command centre orders them. */
+export const listTeams = cache(() =>
+  load<TeamUnitRow>([], (db) => db.from("teams").select("*").eq("visible", true).order("sort_order").order("name").limit(100) as unknown as Query<TeamUnitRow>),
 );
 
 export const listAchievements = cache(() =>

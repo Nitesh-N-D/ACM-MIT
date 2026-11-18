@@ -4,7 +4,8 @@ import { DistrictPage, DistrictSection, SourceNotice } from "@/components/distri
 import { Button } from "@/components/ui/Button";
 import { EmptyState } from "@/components/ui/States";
 import { getTerritory } from "@/config/territories";
-import { getSettings, listAchievements, listTeam } from "@/lib/data/public";
+import { teamSections } from "@/lib/data/halls";
+import { getSettings, listAchievements, listTeam, listTeams } from "@/lib/data/public";
 import type { TeamRow } from "@/lib/data/types";
 import { pageMetadata } from "@/lib/seo";
 
@@ -33,8 +34,25 @@ const WINGS = [
 ];
 
 export default async function Page() {
-  const [settings, team, achievements] = await Promise.all([getSettings(), listTeam(), listAchievements()]);
+  const [settings, team, teams, achievements] = await Promise.all([getSettings(), listTeam(), listTeams(), listAchievements()]);
   const current = team.items.filter((p) => p.group_kind !== "alumni" && p.active);
+  // Working teams (Event Management, Marketing…) with their members. People in
+  // a team are listed there; faculty and office bearers keep their own sections too.
+  const units = teamSections(teams.items, current);
+  const teamOf = new Map(teams.items.map((t) => [t.id, t.name]));
+  const inUnit = new Set(units.flatMap((u) => u.items.map((p) => p.id)));
+  const leads = (kind: TeamRow["group_kind"]) => kind === "faculty" || kind === "committee";
+  const section = (key: string, id: string, eyebrow: string, title: string, people: TeamRow[], description?: string, badge = true) => (
+    <DistrictSection key={key} id={id} eyebrow={eyebrow} title={title} description={description}>
+      <CardGrid cols={4}>
+        {people.map((p) => (
+          <li key={p.id} id={`person-${p.id}`} className="scroll-mt-28">
+            <PersonCard person={p} accent={accent} team={badge && p.team_id ? teamOf.get(p.team_id) : undefined} />
+          </li>
+        ))}
+      </CardGrid>
+    </DistrictSection>
+  );
 
   return (
     <DistrictPage id="sanctuary" title="Team & Committee" copy={settings.districts.sanctuary}>
@@ -52,21 +70,23 @@ export default async function Page() {
               }
             />
           )
-        : GROUPS.map((g) => {
-            const people = current.filter((p) => p.group_kind === g.kind);
-            if (people.length === 0) return null;
-            return (
-              <DistrictSection key={g.kind} id={`team-${g.kind}`} eyebrow={g.eyebrow} title={g.title}>
-                <CardGrid cols={4}>
-                  {people.map((p) => (
-                    <li key={p.id}>
-                      <PersonCard person={p} accent={accent} />
-                    </li>
-                  ))}
-                </CardGrid>
-              </DistrictSection>
-            );
-          })}
+        : (
+            <>
+              {GROUPS.filter((g) => leads(g.kind)).map((g) => {
+                const people = current.filter((p) => p.group_kind === g.kind);
+                return people.length > 0 && section(g.kind, `group-${g.kind}`, g.eyebrow, g.title, people);
+              })}
+              {units.length > 0 && (
+                <div id="teams" className="scroll-mt-28">
+                  {units.map((u) => section(u.id, u.id, "Team", u.title, u.items, u.description, false))}
+                </div>
+              )}
+              {GROUPS.filter((g) => !leads(g.kind)).map((g) => {
+                const people = current.filter((p) => p.group_kind === g.kind && !inUnit.has(p.id));
+                return people.length > 0 && section(g.kind, `group-${g.kind}`, g.eyebrow, g.title, people);
+              })}
+            </>
+          )}
 
       {achievements.items.length > 0 && (
         <DistrictSection
