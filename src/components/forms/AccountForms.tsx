@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useActionState, useState, useTransition } from "react";
-import { adminSignIn, removeTotp, requestSignIn, startTotp, submitProject, updateProfile, verifyTotp, type Enrolment } from "@/app/actions/account";
+import { adminSignIn, changeAdminPassword, removeTotp, requestSignIn, startTotp, submitProject, updateProfile, verifyTotp, type Enrolment } from "@/app/actions/account";
 import { Button } from "@/components/ui/Button";
 import { Notice } from "@/components/ui/States";
 import type { FormState } from "@/lib/validate";
@@ -162,6 +162,34 @@ export function TotpRemove({ factorId }: { factorId: string }) {
       <Button type="submit" variant="ghost" size="sm" disabled={pending}>
         {pending ? "Removing…" : "Remove authenticator app"}
       </Button>
+    </form>
+  );
+}
+
+/** Lets a signed-in administrator change their own command-centre password. */
+export function ChangePasswordForm() {
+  const [state, action, pending] = useActionState(changeAdminPassword, initial);
+  return (
+    // Re-mount after a success so the fields are cleared.
+    <form key={state.ok ? state.message : "edit"} action={action} noValidate className="space-y-5">
+      <FormMessage state={state} />
+      <TextField name="current_password" label="Current password" type="password" autoComplete="current-password" required maxLength={128} state={state} defaultValue="" />
+      <TextField
+        name="new_password"
+        label="New password"
+        type="password"
+        autoComplete="new-password"
+        required
+        minLength={12}
+        maxLength={72}
+        state={state}
+        defaultValue=""
+        hint="At least 12 characters. A long, unique passphrase is best."
+      />
+      <TextField name="confirm_password" label="Confirm new password" type="password" autoComplete="new-password" required maxLength={72} state={state} defaultValue="" />
+      <Submit pending={pending} busy="Changing…">
+        Change password
+      </Submit>
     </form>
   );
 }

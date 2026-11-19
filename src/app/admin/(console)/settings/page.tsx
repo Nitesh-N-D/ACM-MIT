@@ -3,6 +3,7 @@ import {
   SiteSettingsForm,
 } from "@/components/admin/Controls";
 import { AdminHeader, LoadError, Panel } from "@/components/admin/Shell";
+import { ChangePasswordForm } from "@/components/forms/AccountForms";
 import { loadSettings } from "@/lib/admin/settings";
 import { ADMINS } from "@/lib/auth/roles";
 import { requireAdmin } from "@/lib/auth/session";
@@ -10,7 +11,7 @@ import { requireAdmin } from "@/lib/auth/session";
 export const metadata = { title: "Website & experience" };
 
 export default async function Page() {
-  const { db } = await requireAdmin(ADMINS);
+  const { db, viewer } = await requireAdmin(ADMINS);
   const settings = await loadSettings(db);
 
   return (
@@ -47,6 +48,14 @@ export default async function Page() {
           </Panel>
         </div>
       )}
+      <div className="mt-6 grid gap-6 xl:grid-cols-2">
+        <Panel
+          title="Your password"
+          description={`Changes the password ${viewer.email} uses at the command-centre sign-in.`}
+        >
+          <ChangePasswordForm />
+        </Panel>
+      </div>
     </>
   );
 }

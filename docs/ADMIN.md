@@ -26,7 +26,7 @@ The sidebar shows only the sections your role allows, and the server checks the 
 | Content | Announcements, Projects, Project approval, Learning & workshops, Achievements, Heritage archive, Homepage & districts | Each item has a status: *draft*, *published* or *archived*. Only published items are public. |
 | People & media | People & alumni, Teams, Media library, Gallery albums | See **People and consent** below |
 | Community | Members, Membership applications, Contact messages | Applications are approved or rejected. Messages are marked read or archived, or deleted. |
-| System | Website & experience, Roles, Activity log, Export centre | Settings control contact details, whether membership is open, and 3D defaults (intro on or off, auto-rotate, maximum quality) |
+| System | Website & experience, Roles, Activity log, Export centre | Settings control contact details, whether membership is open, and 3D defaults (intro on or off, auto-rotate, maximum quality). The same page has **Your password**, where an administrator changes their own command-centre password |
 
 ## Publishing
 

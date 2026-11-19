@@ -89,4 +89,4 @@ tests/e2e/             Playwright tests
 
 ## Before public launch
 
-See the checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In particular, the origin and licence of the Sentinel model must be confirmed (see [docs/ASSETS.md](docs/ASSETS.md)), and the administrator account needs a strong password.
+See the checklist in [docs/DEPLOYMENT.md](docs/DEPLOYMENT.md). In particular, the origin and licence of the Sentinel model must be confirmed (see [docs/ASSETS.md](docs/ASSETS.md)), and the administrator account needs a strong password. Administrators can change it at any time under Command centre → Website & experience → Your password.

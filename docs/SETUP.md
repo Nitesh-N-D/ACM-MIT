@@ -46,10 +46,16 @@ The command centre is opened by the chapter account **acmmitstudentchapter@gmail
 1. Apply `0003_teams.sql` if you have not already (step 3).
 2. Go to Supabase Dashboard → Authentication → Users → **Add user** → **Create new user**:
    - E-mail: `acmmitstudentchapter@gmail.com`
-   - Password: choose a **strong, unique password**, 16 or more characters, kept in a password manager. Replace any short or shared password before launch.
+   - Password: choose a **strong, unique password** (at least 12 characters; 16 or more is better), kept in a password manager.
    - Tick **Auto Confirm User**.
 3. Make sure `SUPABASE_SERVICE_ROLE_KEY` is set on the server. The first sign-in uses it to grant the Super Admin role.
 4. Open **`/admin/sign-in`** and sign in with that e-mail and password. You arrive at `/admin`.
+
+### Changing the password
+
+Once signed in, an administrator can change their own password under **Command centre → Website & experience → Your password**. Enter the current password, then the new one twice (12 to 72 characters). The current password is checked first, and the session stays signed in.
+
+If the password is forgotten, reset it in Supabase Dashboard → Authentication → Users → the account → **Send password recovery**, or set a new one there directly.
 
 Further staff members do not need passwords. They sign in as members at `/sign-in`, and a Super Admin gives them a role under Command centre → Roles (see [ADMIN.md](ADMIN.md)).
 

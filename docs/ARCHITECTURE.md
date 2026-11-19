@@ -27,7 +27,7 @@
 ## Authentication and roles
 
 - **Members** sign in with an e-mail link (`/sign-in` → `/auth/callback`).
-- **The chapter account** signs in with a password at `/admin/sign-in`.
+- **The chapter account** signs in with a password at `/admin/sign-in`, and can change it under Website & experience (`changeAdminPassword`, which re-checks the current password on a separate, cookie-less client before calling `auth.updateUser`).
 - `getViewer()` (`src/lib/auth/session.ts`) verifies the user with the auth server on every request and reads their roles from `user_roles`.
 - A verified e-mail on the allowlist (`ADMIN_EMAILS`, defaulting to `src/config/admin.ts`) is granted Super Admin by the server using the service-role key. Nothing a visitor submits can affect this.
 - `requireAdmin()` guards every `/admin` page and action. It checks the allowlist is configured, the visitor is signed in, the e-mail is verified, the visitor has a staff role, and MFA when `ADMIN_REQUIRE_MFA=true`.
